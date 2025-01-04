@@ -4,6 +4,7 @@
 #pragma once
 
 #include <vector>
+#include <array>
 
 #include "common/common_funcs.h"
 #include "common/common_types.h"
@@ -34,6 +35,25 @@ public:
     Kernel::KEvent* QueryEvent(u32 event_id) override;
 
 private:
+    static constexpr std::size_t MaxZBCTableSize = 16;
+    static constexpr std::size_t MaxZBCFormats = 32;
+
+    enum class ZBCTableMode : u32 {
+        COLOR = 0,
+        DEPTH = 1,
+    };
+
+    struct ZBCColorEntry {
+        u32 color_ds[4];
+    };
+
+    struct ZBCDepthEntry {
+        u32 depth[4];
+    };
+
+    std::array<ZBCColorEntry, MaxZBCTableSize> zbc_color_table{};
+    std::array<ZBCDepthEntry, MaxZBCTableSize> zbc_depth_table{};
+
     struct IoctlGpuCharacteristics {
         u32_le arch;                       // 0x120 (NVGPU_GPU_ARCH_GM200)
         u32_le impl;                       // 0xB (NVGPU_GPU_IMPL_GM20B)

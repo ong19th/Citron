@@ -223,8 +223,30 @@ NvResult nvhost_ctrl_gpu::ZCullGetInfo(IoctlNvgpuGpuZcullGetInfoArgs& params) {
 }
 
 NvResult nvhost_ctrl_gpu::ZBCSetTable(IoctlZbcSetTable& params) {
-    LOG_WARNING(Service_NVDRV, "(STUBBED) called");
-    // TODO(ogniK): What does this even actually do?
+    LOG_DEBUG(Service_NVDRV, "called with index={}, format={}, mode={}",
+              params.color_ds_table_index, params.format, params.mode);
+
+    // Validate parameters
+    if (params.color_ds_table_index >= MaxZBCTableSize || params.format >= MaxZBCFormats) {
+        return NvResult::InvalidArgument;
+    }
+
+    // Store the color/depth values
+    switch (params.mode) {
+    case ZBCTableMode::COLOR:
+        // Store color values
+        std::memcpy(zbc_color_table[params.color_ds_table_index].color_ds,
+                    params.color_ds, sizeof(params.color_ds));
+        break;
+    case ZBCTableMode::DEPTH:
+        // Store depth values
+        std::memcpy(zbc_depth_table[params.color_ds_table_index].depth,
+                    params.depth, sizeof(params.depth));
+        break;
+    default:
+        return NvResult::InvalidArgument;
+    }
+
     return NvResult::Success;
 }
 
