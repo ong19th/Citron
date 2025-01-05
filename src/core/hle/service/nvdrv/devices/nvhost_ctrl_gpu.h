@@ -45,11 +45,11 @@ private:
 
     struct ZBCColorEntry {
         u32 color_ds[4];
-    };
+    } __attribute__((packed));
 
     struct ZBCDepthEntry {
         u32 depth[4];
-    };
+    } __attribute__((packed));
 
     std::array<ZBCColorEntry, MaxZBCTableSize> zbc_color_table{};
     std::array<ZBCDepthEntry, MaxZBCTableSize> zbc_depth_table{};
@@ -139,14 +139,18 @@ private:
     static_assert(sizeof(IoctlNvgpuGpuZcullGetInfoArgs) == 40,
                   "IoctlNvgpuGpuZcullGetInfoArgs is incorrect size");
 
+#pragma pack(push, 1)
     struct IoctlZbcSetTable {
-        u32_le color_ds[4];
-        u32_le color_l2[4];
-        u32_le depth;
-        u32_le format;
-        u32_le type;
-    };
-    static_assert(sizeof(IoctlZbcSetTable) == 44, "IoctlZbcSetTable is incorrect size");
+        u32 color_ds_table_index;
+        u32 format;
+        u32 mode;
+        u32 color_ds[4];  // 16 bytes
+        u32 color_l2[4];  // 16 bytes
+        u32 depth;        // 4 bytes
+    } __attribute__((packed));  // Use GCC's packed attribute
+#pragma pack(pop)
+
+    static_assert(sizeof(IoctlZbcSetTable) == 48, "IoctlZbcSetTable is incorrect size");
 
     struct IoctlZbcQueryTable {
         u32_le color_ds[4];
