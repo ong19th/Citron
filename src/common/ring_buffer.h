@@ -31,6 +31,8 @@ class RingBuffer {
     // Ensure lock-free.
     static_assert(std::atomic_size_t::is_always_lock_free);
 
+    static constexpr size_t CACHE_LINE_SIZE = 64;
+
 public:
     /// Pushes slots into the ring buffer
     /// @param new_slots   Pointer to the slots to push
@@ -105,11 +107,11 @@ private:
     // TODO: Remove this ifdef whenever clang and GCC support
     //       std::hardware_destructive_interference_size.
 #ifdef __cpp_lib_hardware_interference_size
-    alignas(std::hardware_destructive_interference_size) std::atomic_size_t m_read_index{0};
-    alignas(std::hardware_destructive_interference_size) std::atomic_size_t m_write_index{0};
+    alignas(CACHE_LINE_SIZE) std::atomic_size_t m_read_index{0};
+    alignas(CACHE_LINE_SIZE) std::atomic_size_t m_write_index{0};
 #else
-    alignas(128) std::atomic_size_t m_read_index{0};
-    alignas(128) std::atomic_size_t m_write_index{0};
+    alignas(CACHE_LINE_SIZE) std::atomic_size_t m_read_index{0};
+    alignas(CACHE_LINE_SIZE) std::atomic_size_t m_write_index{0};
 #endif
 
     std::array<T, capacity> m_data;
