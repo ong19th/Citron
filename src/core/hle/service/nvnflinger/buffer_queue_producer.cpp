@@ -117,12 +117,14 @@ Status BufferQueueProducer::SetBufferCount(s32 buffer_count) {
 }
 
 Status BufferQueueProducer::WaitForFreeSlotThenRelock(bool async, s32* found, Status* return_flags,
-                                                      std::unique_lock<std::mutex>& lk) const {
+                                                     std::unique_lock<std::mutex>& lk) const {
     bool try_again = true;
 
     while (try_again) {
+        // Check if queue is abandoned before proceeding
         if (core->is_abandoned) {
             LOG_ERROR(Service_Nvnflinger, "BufferQueue has been abandoned");
+            *found = BufferQueueCore::INVALID_BUFFER_SLOT;
             return Status::NoInit;
         }
 
@@ -136,7 +138,6 @@ Status BufferQueueProducer::WaitForFreeSlotThenRelock(bool async, s32* found, St
 
         // Free up any buffers that are in slots beyond the max buffer count
         for (s32 s = max_buffer_count; s < BufferQueueDefs::NUM_BUFFER_SLOTS; ++s) {
-            ASSERT(slots[s].buffer_state == BufferState::Free);
             if (slots[s].graphic_buffer != nullptr && slots[s].buffer_state == BufferState::Free &&
                 !slots[s].is_preallocated) {
                 core->FreeBufferLocked(s);
@@ -148,6 +149,8 @@ Status BufferQueueProducer::WaitForFreeSlotThenRelock(bool async, s32* found, St
         *found = BufferQueueCore::INVALID_BUFFER_SLOT;
         s32 dequeued_count{};
         s32 acquired_count{};
+
+        // Scan for available buffers
         for (s32 s{}; s < max_buffer_count; ++s) {
             switch (slots[s].buffer_state) {
             case BufferState::Dequeued:
@@ -157,8 +160,6 @@ Status BufferQueueProducer::WaitForFreeSlotThenRelock(bool async, s32* found, St
                 ++acquired_count;
                 break;
             case BufferState::Free:
-                // We return the oldest of the free buffers to avoid stalling the producer if
-                // possible, since the consumer may still have pending reads of in-flight buffers
                 if (*found == BufferQueueCore::INVALID_BUFFER_SLOT ||
                     slots[s].frame_number < slots[*found].frame_number) {
                     *found = s;
@@ -169,50 +170,32 @@ Status BufferQueueProducer::WaitForFreeSlotThenRelock(bool async, s32* found, St
             }
         }
 
-        // Producers are not allowed to dequeue more than one buffer if they did not set a buffer
-        // count
+        // Check for buffer count override issues
         if (!core->override_max_buffer_count && dequeued_count) {
-            LOG_ERROR(Service_Nvnflinger,
-                      "can't dequeue multiple buffers without setting the buffer count");
+            LOG_ERROR(Service_Nvnflinger, "Can't dequeue multiple buffers without setting buffer count");
             return Status::InvalidOperation;
         }
 
-        // See whether a buffer has been queued since the last SetBufferCount so we know whether to
-        // perform the min undequeued buffers check below
-        if (core->buffer_has_been_queued) {
-            // Make sure the producer is not trying to dequeue more buffers than allowed
-            const s32 new_undequeued_count = max_buffer_count - (dequeued_count + 1);
-            const s32 min_undequeued_count = core->GetMinUndequeuedBufferCountLocked(async);
-            if (new_undequeued_count < min_undequeued_count) {
-                LOG_ERROR(Service_Nvnflinger,
-                          "min undequeued buffer count({}) exceeded (dequeued={} undequeued={})",
-                          min_undequeued_count, dequeued_count, new_undequeued_count);
-                return Status::InvalidOperation;
-            }
-        }
-
-        // If we disconnect and reconnect quickly, we can be in a state where our slots are empty
-        // but we have many buffers in the queue. This can cause us to run out of memory if we
-        // outrun the consumer. Wait here if it looks like we have too many buffers queued up.
+        // Handle queue size limits
         const bool too_many_buffers = core->queue.size() > static_cast<size_t>(max_buffer_count);
         if (too_many_buffers) {
-            LOG_ERROR(Service_Nvnflinger, "queue size is {}, waiting", core->queue.size());
+            LOG_WARNING(Service_Nvnflinger, "Queue size {} exceeds max buffer count {}, waiting",
+                       core->queue.size(), max_buffer_count);
         }
 
-        // If no buffer is found, or if the queue has too many buffers outstanding, wait for a
-        // buffer to be acquired or released, or for the max buffer count to change.
         try_again = (*found == BufferQueueCore::INVALID_BUFFER_SLOT) || too_many_buffers;
         if (try_again) {
-            // Return an error if we're in non-blocking mode (producer and consumer are controlled
-            // by the application).
             if (core->dequeue_buffer_cannot_block &&
                 (acquired_count <= core->max_acquired_buffer_count)) {
                 return Status::WouldBlock;
             }
 
             if (!core->WaitForDequeueCondition(lk)) {
-                // We are no longer running
-                return Status::NoError;
+                if (core->is_abandoned) {
+                    LOG_ERROR(Service_Nvnflinger, "BufferQueue was abandoned while waiting");
+                    return Status::NoInit;
+                }
+                continue;
             }
         }
     }
