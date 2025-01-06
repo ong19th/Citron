@@ -13,5 +13,6 @@ constexpr Result ResultLibraryAppletTerminated{ErrorModule::AM, 22};
 constexpr Result ResultInvalidOffset{ErrorModule::AM, 503};
 constexpr Result ResultInvalidStorageType{ErrorModule::AM, 511};
 constexpr Result ResultFatalSectionCountImbalance{ErrorModule::AM, 512};
+constexpr Result ResultNoData{ErrorModule::AM, 2};
 
 } // namespace Service::AM

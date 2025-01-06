@@ -133,6 +133,9 @@ struct Applet {
     void UpdateSuspensionStateLocked(bool force_message);
     void SetInteractibleLocked(bool interactible);
     void OnProcessTerminatedLocked();
+
+    // Storage channels
+    std::deque<std::vector<u8>> friend_invitation_storage_channel;
 };
 
 } // namespace Service::AM
