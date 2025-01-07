@@ -30,6 +30,9 @@ jobs:
           vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang
           vulkan-use-cache: true
 
+      - name: Disable vcpkg Metrics
+        run: ./externals/vcpkg/bootstrap-vcpkg.sh -disableMetrics
+
       - name: Grant execute permission for gradlew
         run: |
           cd src/android
@@ -44,7 +47,7 @@ jobs:
         uses: ncipollo/release-action@v1.14.0
         with:
           name: ${{ env.CURRENT_DATE }}.${{ github.run_number }}
-          artifacts: ./src/android/app/build/outputs/apk/mainline/release/app-mainline-release.apk"
+          artifacts: ./src/android/app/build/outputs/apk/mainline/release/app-mainline-release.apk
           tag: ${{ env.CURRENT_DATE }}.${{ github.run_number }}
           commit: master
           allowUpdates: true
