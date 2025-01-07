@@ -30,17 +30,23 @@ jobs:
           vulkan-components: Glslang
           vulkan-use-cache: true
 
-      - name: Prepare CMake
-        uses: lukka/get-cmake@latest
-
       - name: Disable vcpkg Metrics
         run: ./externals/vcpkg/bootstrap-vcpkg.sh -disableMetrics
 
-      - name: Build with Android NDK r26
-        uses: nttld/setup-ndk@v1
+      - name: Setup Android SDK
+        uses: amyu/setup-android@v4
         with:
-          ndk-version: r26d
-          link-to-sdk: true
+          cache-disabled: true
+          # default: `${sdkVersion}-${buildToolsVersion}-${ndkVersion}-${cmakeVersion}-v4`
+          # Custom key for cache. It is invalid when `cache-disabled: true`
+          # cache-key: 'custom-cache-key'
+          sdk-version: 34
+          build-tools-version: 34.0.0
+          cmake-version: 3.22.1
+          ndk-version: 26.3.11579264
+          generate-job-summary: false
+
+      - name: Build APK with Gradle
       - run: |
           cd src/android
           chmod +x ./gradlew
