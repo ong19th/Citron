@@ -5,12 +5,10 @@ on:
 jobs:
   build:
     name: Build for Android
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
-      - name: Set current date as env variable
-        run: |
-          $CURRENT_DATE=& Get-Date -format yyyy.MM.dd
-          echo "CURRENT_DATE=$CURRENT_DATE" >> $env:GITHUB_ENV
+      - name: Set Current Date as Env Variable
+        run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
       - name: Checkout Project
         uses: actions/checkout@v4.2.2
@@ -25,21 +23,23 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Prepare Visual Studio
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.x
-
       - name: Prepare Vulkan SDK
         uses: humbletim/setup-vulkan-sdk@v1.2.0
         with:
           vulkan-query-version: 1.3.224.1
-          vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang
+          vulkan-components: Glslang
           vulkan-use-cache: true
+
+      - name: Prepare CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Disable vcpkg Metrics
+        run: ./externals/vcpkg/bootstrap-vcpkg.sh -disableMetrics
 
       - name: Build with Gradle
         run: |
           cd src/android
+          chmod +x ./gradlew
           ./gradlew assembleRelease
 
       - name: Release
