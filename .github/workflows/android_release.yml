@@ -23,11 +23,14 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
+      - name: Change Path
+        run: cd src/android
+      
       - name: Grant execute permission for gradlew
-        run: chmod +x ./src/android/gradlew
+        run: chmod +x gradlew
 
       - name: Build with Gradle
-        run: ./src/android/gradlew assembleRelease
+        run: ./gradlew assembleRelease
 
       - name: Release
         uses: ncipollo/release-action@v1.14.0
