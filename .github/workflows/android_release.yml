@@ -4,6 +4,7 @@ on:
     inputs: {}
 jobs:
   build:
+    name: Build for Android
     runs-on: ubuntu-latest
     steps:
       - name: Set current date as env variable
@@ -23,7 +24,7 @@ jobs:
           cache: gradle
 
       - name: Grant execute permission for gradlew
-        run: chmod +x /src/android/gradlew
+        run: chmod +x ./src/android/gradlew
 
       - name: Build with Gradle
         run: ./src/android/gradlew assembleRelease
