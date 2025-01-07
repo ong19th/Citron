@@ -29,13 +29,15 @@ jobs:
           chmod +x ./gradlew
 
       - name: Build with Gradle
-        run: ./gradlew assembleRelease
+        run: |
+          cd src/android
+          ./gradlew assembleRelease
 
       - name: Release
         uses: ncipollo/release-action@v1.14.0
         with:
           name: ${{ env.CURRENT_DATE }}.${{ github.run_number }}
-          artifacts: ./app/build/outputs/apk/mainline/release/app-mainline-release.apk"
+          artifacts: ./src/android/app/build/outputs/apk/mainline/release/app-mainline-release.apk"
           tag: ${{ env.CURRENT_DATE }}.${{ github.run_number }}
           commit: master
           allowUpdates: true
