@@ -47,7 +47,7 @@ jobs:
           generate-job-summary: false
 
       - name: Build APK with Gradle
-      - run: |
+        run: |
           cd src/android
           chmod +x ./gradlew
           ./gradlew assembleRelease
