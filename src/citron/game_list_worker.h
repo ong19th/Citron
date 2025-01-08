@@ -76,9 +76,6 @@ private:
     void ScanFileSystem(ScanTarget target, const std::string& dir_path, bool deep_scan,
                         GameListDir* parent_dir);
 
-    void ProcessGameFile(const std::string& physical_name, ScanTarget target,
-                        GameListDir* parent_dir);
-
     std::shared_ptr<FileSys::VfsFilesystem> vfs;
     FileSys::ManualContentProvider* provider;
     QVector<UISettings::GameDir>& game_dirs;
