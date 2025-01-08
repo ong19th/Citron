@@ -767,6 +767,15 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline(
     }
 
     auto program{TranslateProgram(pools.inst, pools.block, env, cfg, host_info)};
+
+    // Add support for bindless texture constant buffer
+    if (program.info.storage_buffers_descriptors.size() > 0) {
+        Shader::ConstantBufferDescriptor desc;
+        desc.index = 0;
+        desc.count = 1;
+        program.info.constant_buffer_descriptors.push_back(desc);
+    }
+
     const std::vector<u32> code{EmitSPIRV(profile, program)};
     device.SaveShader(code);
     vk::ShaderModule spv_module{BuildShader(device, code)};
