@@ -768,12 +768,20 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline(
 
     auto program{TranslateProgram(pools.inst, pools.block, env, cfg, host_info)};
 
-    // Add support for bindless texture constant buffer
+    // Add support for bindless texture constant buffer only if needed
     if (program.info.storage_buffers_descriptors.size() > 0) {
-        Shader::ConstantBufferDescriptor desc;
-        desc.index = 0;
-        desc.count = 1;
-        program.info.constant_buffer_descriptors.push_back(desc);
+        // Check if a constant buffer at index 0 already exists
+        const bool has_cb0 = std::any_of(program.info.constant_buffer_descriptors.begin(),
+                                        program.info.constant_buffer_descriptors.end(),
+                                        [](const auto& cb) { return cb.index == 0; });
+
+        // Only add if not already present
+        if (!has_cb0) {
+            Shader::ConstantBufferDescriptor desc;
+            desc.index = 0;
+            desc.count = 1;
+            program.info.constant_buffer_descriptors.push_back(desc);
+        }
     }
 
     const std::vector<u32> code{EmitSPIRV(profile, program)};
