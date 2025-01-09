@@ -66,6 +66,8 @@ option(CITRON_DOWNLOAD_TIME_ZONE_DATA "Always download time zone binaries" OFF)
 
 option(CITRON_ENABLE_PORTABLE "Allow citron to enable portable mode if a user folder is found in the CWD" ON)
 
+option(CITRON_USE_LLVM_DEMANGLE "Use LLVM Demangle" ON)
+
 CMAKE_DEPENDENT_OPTION(CITRON_USE_FASTER_LD "Check if a faster linker is available" ON "NOT WIN32" OFF)
 
 CMAKE_DEPENDENT_OPTION(USE_SYSTEM_MOLTENVK "Use the system MoltenVK lib (instead of the bundled one)" OFF "APPLE" OFF)
@@ -295,7 +297,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 find_package(Boost 1.79.0 REQUIRED context)
 find_package(enet 1.3 MODULE)
 find_package(fmt 9 REQUIRED)
-find_package(LLVM 17.0.2 MODULE COMPONENTS Demangle)
+if (CITRON_USE_LLVM_DEMANGLE)
+    find_package(LLVM 17.0.2 MODULE COMPONENTS Demangle)
+endif()
 find_package(lz4 REQUIRED)
 find_package(nlohmann_json 3.8 REQUIRED)
 find_package(Opus 1.3 MODULE)
