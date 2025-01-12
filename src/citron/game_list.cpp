@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2015 Citra Emulator Project & 2025 Citron Homebrew Project
+// SPDX-FileCopyrightText: 2025 Citron Homebrew Emulator Project & vampiric_x 2025
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <regex>
@@ -235,7 +235,7 @@ void GameList::OnTextChanged(const QString& new_text) {
                     file_path.mid(file_path.lastIndexOf(QLatin1Char{'/'}) + 1) + QLatin1Char{' '} +
                     file_title;
                 if (ContainsAllWords(file_name, edit_filter_text) ||
-                    (file_program_id.count() == 16 && file_program_id.contains(edit_filter_text))) {
+                    (file_program_id.size() == 16 && file_program_id.contains(edit_filter_text))) {
                     tree_view->setRowHidden(j, folder_index, false);
                     ++result_count;
                 } else {
