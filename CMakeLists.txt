@@ -654,3 +654,21 @@ if(ENABLE_QT AND UNIX AND NOT APPLE)
     install(FILES "dist/org.citron_emu.citron.metainfo.xml"
             DESTINATION "share/metainfo")
 endif()
+
+# Set default x86-64-v2 instruction set for better compatibility
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64|AMD64")
+    # Only set flags if not explicitly provided via command line
+    if (NOT CMAKE_C_FLAGS MATCHES "-march=" AND NOT CMAKE_CXX_FLAGS MATCHES "-march=")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=x86-64-v2")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=x86-64-v2")
+    endif()
+
+    # Ensure we're not getting overridden by system defaults
+    add_compile_options(-march=x86-64-v2)
+
+    # Force disable higher ISA levels
+    add_compile_definitions(
+        __x86_64_v3__=0
+        __x86_64_v4__=0
+    )
+endif()
