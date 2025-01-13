@@ -657,14 +657,22 @@ endif()
 
 # Set default x86-64-v2 instruction set for better compatibility
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64|AMD64")
-    # Only set flags if not explicitly provided via command line
-    if (NOT CMAKE_C_FLAGS MATCHES "-march=" AND NOT CMAKE_CXX_FLAGS MATCHES "-march=")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=x86-64-v2")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=x86-64-v2")
-    endif()
+    # Ensure quotes are preserved and flags are set for both main build and vcpkg
+    set(ISA_FLAGS "-march=x86-64-v2")
+
+    # Set for main project
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ISA_FLAGS}")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ISA_FLAGS}")
+
+    # Set for vcpkg dependencies
+    set(VCPKG_CXX_FLAGS "${ISA_FLAGS}")
+    set(VCPKG_C_FLAGS "${ISA_FLAGS}")
+
+    # Set toolchain options for vcpkg
+    set(VCPKG_CHAINLOAD_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/x86-64-v2-toolchain.cmake")
 
     # Ensure we're not getting overridden by system defaults
-    add_compile_options(-march=x86-64-v2)
+    add_compile_options(${ISA_FLAGS})
 
     # Force disable higher ISA levels
     add_compile_definitions(
