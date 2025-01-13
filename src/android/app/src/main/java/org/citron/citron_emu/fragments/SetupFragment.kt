@@ -100,6 +100,19 @@ class SetupFragment : Fragment() {
         pages.apply {
             add(
                 SetupPage(
+                    R.drawable.ic_check,
+                    R.string.disclaimer_title,
+                    R.string.disclaimer_description,
+                    0,
+                    true,
+                    R.string.accept_and_continue,
+                    { pageForward() },
+                    false
+                )
+            )
+
+            add(
+                SetupPage(
                     R.drawable.ic_citron_title,
                     R.string.welcome,
                     R.string.welcome_description,

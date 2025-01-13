@@ -499,10 +499,20 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                     val cpuBackend = NativeLibrary.getCpuBackend()
                     val gpuDriver = NativeLibrary.getGpuDriver()
                     if (_binding != null) {
+                        // Calculate color based on FPS (red at 0, green at 60)
+                        val fps = perfStats[FPS].toFloat()
+                        val normalizedFps = (fps / 60f).coerceIn(0f, 1f)
+
+                        // Interpolate between red (0xFFFF0000) and green (0xFF00FF00)
+                        val red = ((1f - normalizedFps) * 255).toInt()
+                        val green = (normalizedFps * 255).toInt()
+                        val color = android.graphics.Color.rgb(red, green, 0)
+
+                        binding.showFpsText.setTextColor(color)
                         binding.showFpsText.text =
-                            String.format("FPS: %.1f\n%s/%s", perfStats[FPS], cpuBackend, gpuDriver)
+                            String.format("FPS: %.1f\n%s/%s", fps, cpuBackend, gpuDriver)
                     }
-                    perfStatsUpdateHandler.postDelayed(perfStatsUpdater!!, 800)
+                    perfStatsUpdateHandler.postDelayed(perfStatsUpdater!!, 1000)
                 }
             }
             perfStatsUpdateHandler.post(perfStatsUpdater!!)
@@ -528,11 +538,37 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                         PowerManager.THERMAL_STATUS_CRITICAL,
                         PowerManager.THERMAL_STATUS_EMERGENCY,
                         PowerManager.THERMAL_STATUS_SHUTDOWN -> "☢️"
-
                         else -> "🙂"
                     }
+
+                    // Get temperature in Celsius from thermal sensor
+                    val temperature = try {
+                        val process = Runtime.getRuntime().exec("cat /sys/class/thermal/thermal_zone0/temp")
+                        val reader = process.inputStream.bufferedReader()
+                        val temp = reader.readLine().toFloat() / 1000f // Convert from millicelsius to celsius
+                        reader.close()
+                        temp
+                    } catch (e: Exception) {
+                        0f
+                    }
+
+                    // Convert to Fahrenheit
+                    val fahrenheit = (temperature * 9f / 5f) + 32f
+
                     if (_binding != null) {
-                        binding.showThermalsText.text = thermalStatus
+                        // Color interpolation based on temperature (green at 45°C, red at 85°C)
+                        val normalizedTemp = ((temperature - 45f) / 40f).coerceIn(0f, 1f)
+                        val red = (normalizedTemp * 255).toInt()
+                        val green = ((1f - normalizedTemp) * 255).toInt()
+                        val color = android.graphics.Color.rgb(red, green, 0)
+
+                        binding.showThermalsText.setTextColor(color)
+                        binding.showThermalsText.text = String.format(
+                            "%s %.1f°C\n%.1f°F",
+                            thermalStatus,
+                            temperature,
+                            fahrenheit
+                        )
                     }
                     thermalStatsUpdateHandler.postDelayed(thermalStatsUpdater!!, 1000)
                 }

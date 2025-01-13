@@ -13,6 +13,9 @@
     <string name="welcome">Welcome!</string>
     <string name="welcome_description">Learn how to setup &lt;b>citron&lt;/b> and jump into emulation.</string>
     <string name="get_started">Get started</string>
+    <string name="disclaimer_title">Legal Disclaimer</string>
+    <string name="disclaimer_description">Welcome to Citron! This application is intended for homebrew development and legitimate backup purposes only. We do not support or advocate piracy. By continuing, you acknowledge that you will only use this application in compliance with all applicable laws and regulations.</string>
+    <string name="accept_and_continue">Accept &amp; Continue</string>
     <string name="keys">Keys</string>
     <string name="keys_description">Select your &lt;b>prod.keys&lt;/b> file with the button below.</string>
     <string name="select_keys">Select Keys</string>

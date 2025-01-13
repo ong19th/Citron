@@ -97,23 +97,7 @@ if (ANDROID OR WIN32 OR APPLE)
 endif()
 option(ENABLE_OPENSSL "Enable OpenSSL backend for ISslConnection" ${DEFAULT_ENABLE_OPENSSL})
 
-if (ANDROID AND CITRON_DOWNLOAD_ANDROID_VVL)
-    set(vvl_version "sdk-1.3.261.1")
-    set(vvl_zip_file "${CMAKE_BINARY_DIR}/externals/vvl-android.zip")
-    if (NOT EXISTS "${vvl_zip_file}")
-        # Download and extract validation layer release to externals directory
-        set(vvl_base_url "https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases/download")
-        file(DOWNLOAD "${vvl_base_url}/${vvl_version}/android-binaries-${vvl_version}-android.zip"
-            "${vvl_zip_file}" SHOW_PROGRESS)
-        execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${vvl_zip_file}"
-                        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externals")
-    endif()
-
-    # Copy the arm64 binary to src/android/app/main/jniLibs
-    set(vvl_lib_path "${CMAKE_CURRENT_SOURCE_DIR}/src/android/app/src/main/jniLibs/arm64-v8a/")
-    file(COPY "${CMAKE_BINARY_DIR}/externals/android-binaries-${vvl_version}/arm64-v8a/libVkLayer_khronos_validation.so"
-            DESTINATION "${vvl_lib_path}")
-endif()
+# Copy the VVL arm64 binary to src/android/app/main/jniLibs. REF: https://github.com/KhronosGroup/Vulkan-ValidationLayers/actions/workflows/vvl.yml
 
 if (ANDROID)
     set(CMAKE_SKIP_INSTALL_RULES ON)
