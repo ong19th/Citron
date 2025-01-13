@@ -48,6 +48,10 @@ u32 GetMemorySizeForInit() {
         return Smc::MemorySize_6GB;
     case Settings::MemoryLayout::Memory_8Gb:
         return Smc::MemorySize_8GB;
+    case Settings::MemoryLayout::Memory_10Gb:
+        return Smc::MemorySize_10GB;
+    case Settings::MemoryLayout::Memory_12Gb:
+        return Smc::MemorySize_12GB;
     }
     return Smc::MemorySize_4GB;
 }
@@ -60,6 +64,10 @@ Smc::MemoryArrangement GetMemoryArrangeForInit() {
         return Smc::MemoryArrangement_6GB;
     case Settings::MemoryLayout::Memory_8Gb:
         return Smc::MemoryArrangement_8GB;
+    case Settings::MemoryLayout::Memory_10Gb:
+        return Smc::MemoryArrangement_10GB;
+    case Settings::MemoryLayout::Memory_12Gb:
+        return Smc::MemoryArrangement_12GB;
     }
     return Smc::MemoryArrangement_4GB;
 }
@@ -79,6 +87,10 @@ size_t KSystemControl::Init::GetIntendedMemorySize() {
         return 6_GiB;
     case Smc::MemorySize_8GB:
         return 8_GiB;
+    case Smc::MemorySize_10GB:
+        return 10_GiB;
+    case Smc::MemorySize_12GB:
+        return 12_GiB;
     }
 }
 
@@ -112,8 +124,11 @@ std::size_t KSystemControl::Init::GetApplicationPoolSize() {
         case Smc::MemoryArrangement_6GBForAppletDev:
             return 3285_MiB;
         case Smc::MemoryArrangement_8GB:
-            // Real kernel sets this to 4916_MiB. We are not debugging applets.
             return 6547_MiB;
+        case Smc::MemoryArrangement_10GB:
+            return 8178_MiB;
+        case Smc::MemoryArrangement_12GB:
+            return 9809_MiB;
         }
     }();
 
@@ -137,9 +152,13 @@ size_t KSystemControl::Init::GetAppletPoolSize() {
         case Smc::MemoryArrangement_6GBForAppletDev:
             return 2193_MiB;
         case Smc::MemoryArrangement_8GB:
-            //! Real kernel sets this to 2193_MiB. We are not debugging applets.
+            return 562_MiB;
+        case Smc::MemoryArrangement_10GB:
+            return 562_MiB;
+        case Smc::MemoryArrangement_12GB:
             return 562_MiB;
         }
+
     }();
 
     // Return (possibly) adjusted size.

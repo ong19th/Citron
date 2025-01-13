@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2018 yuzu Emulator Project & 2025 citron Homebrew Project
+# SPDX-FileCopyrightText: 2025 Citron Homebrew Emulator Project & vampiric_x 2025
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 set(CMAKE_AUTOMOC ON)
@@ -368,11 +368,7 @@ if (APPLE)
 
 elseif(WIN32)
     # compile as a win32 gui application instead of a console application
-    if (QT_VERSION VERSION_GREATER_EQUAL 6)
-        target_link_libraries(citron PRIVATE Qt6::EntryPointPrivate)
-    else()
-        target_link_libraries(citron PRIVATE Qt5::WinMain)
-    endif()
+    target_link_libraries(citron PRIVATE Qt6::EntryPointPrivate)
     if(MSVC)
         target_link_libraries(citron PRIVATE version.lib)
         set_target_properties(citron PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS")
@@ -382,15 +378,15 @@ elseif(WIN32)
 endif()
 
 target_link_libraries(citron PRIVATE common core input_common frontend_common network video_core)
-target_link_libraries(citron PRIVATE Boost::headers glad Qt${QT_MAJOR_VERSION}::Widgets)
+target_link_libraries(citron PRIVATE Boost::headers glad Qt6::Widgets)
 target_link_libraries(citron PRIVATE ${PLATFORM_LIBRARIES} Threads::Threads)
 
 target_link_libraries(citron PRIVATE Vulkan::Headers)
 if (NOT WIN32)
-    target_include_directories(citron PRIVATE ${Qt${QT_MAJOR_VERSION}Gui_PRIVATE_INCLUDE_DIRS})
+    target_include_directories(citron PRIVATE ${Qt6Gui_PRIVATE_INCLUDE_DIRS})
 endif()
 if (UNIX AND NOT APPLE)
-    target_link_libraries(citron PRIVATE Qt${QT_MAJOR_VERSION}::DBus)
+    target_link_libraries(citron PRIVATE Qt6::DBus)
 endif()
 
 target_compile_definitions(citron PRIVATE
@@ -448,9 +444,9 @@ if (WIN32 AND QT_VERSION VERSION_GREATER_EQUAL 6)
     add_custom_command(TARGET citron POST_BUILD COMMAND ${WINDEPLOYQT_EXECUTABLE} "${CITRON_EXE_DIR}/citron.exe" --dir "${CITRON_EXE_DIR}" --libdir "${CITRON_EXE_DIR}" --plugindir "${CITRON_EXE_DIR}/plugins" --no-compiler-runtime --no-opengl-sw --no-system-d3d-compiler --no-translations --verbose 0)
 endif()
 
-if (CITRON_USE_BUNDLED_QT AND QT_VERSION VERSION_LESS 6)
-    include(CopyCitronQt5Deps)
-    copy_citron_Qt5_deps(citron)
+if (CITRON_USE_BUNDLED_QT)
+    include(CopyCitronQt6Deps)
+    copy_citron_Qt6_deps(citron)
 endif()
 
 if (ENABLE_SDL2)

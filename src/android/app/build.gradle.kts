@@ -27,20 +27,20 @@ val autoVersion = (((System.currentTimeMillis() / 1000) - 1451606400) / 10).toIn
 android {
     namespace = "org.citron.citron_emu"
 
-    compileSdkVersion = "android-34"
-    ndkVersion = "26.1.10909125"
+    compileSdkVersion = "android-35"
+    ndkVersion = "27.2.12479018" // "28.0.12433566 rc1"// "28.0.12674087 rc2" // "26.1.10909125"
 
     buildFeatures {
         viewBinding = true
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = "21"
     }
 
     packaging {
@@ -56,7 +56,7 @@ android {
         // TODO If this is ever modified, change application_id in strings.xml
         applicationId = "org.citron.citron_emu"
         minSdk = 30
-        targetSdk = 34
+        targetSdk = 35
         versionName = getGitVersion()
 
         versionCode = if (System.getenv("AUTO_VERSIONED") == "true") {
@@ -104,10 +104,13 @@ android {
             }
 
             resValue("string", "app_name_suffixed", "citron")
+            isDefault = true
+            isShrinkResources = true
             isMinifyEnabled = true
+            isJniDebuggable = false
             isDebuggable = false
             proguardFiles(
-                getDefaultProguardFile("proguard-android.txt"),
+                getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
@@ -115,13 +118,12 @@ android {
         // builds a release build that doesn't need signing
         // Attaches 'debug' suffix to version and package name, allowing installation alongside the release build.
         register("relWithDebInfo") {
-            isDefault = true
             resValue("string", "app_name_suffixed", "citron Debug Release")
             signingConfig = signingConfigs.getByName("default")
             isMinifyEnabled = true
             isDebuggable = true
             proguardFiles(
-                getDefaultProguardFile("proguard-android.txt"),
+                getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
             versionNameSuffix = "-relWithDebInfo"
@@ -146,7 +148,7 @@ android {
         create("mainline") {
             isDefault = true
             dimension = "version"
-            buildConfigField("Boolean", "PREMIUM", "false")
+            buildConfigField("Boolean", "PREMIUM", "true") // Spoof EA Version
         }
 
         create("ea") {
@@ -178,13 +180,13 @@ android {
                     "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
                 )
 
-                abiFilters("arm64-v8a", "x86_64")
+                abiFilters("arm64-v8a")
             }
         }
     }
 }
 
-tasks.create<Delete>("ktlintReset") {
+tasks.create<Delete>("ktlintReset") { // Deprecated, Still Works.
     delete(File(buildDir.path + File.separator + "intermediates/ktLint"))
 }
 
@@ -202,7 +204,7 @@ ktlint {
     version.set("0.47.1")
     android.set(true)
     ignoreFailures.set(false)
-    disabledRules.set(
+    disabledRules.set( // Deprecated, Still Works.
         setOf(
             "no-wildcard-imports",
             "package-name",
@@ -236,7 +238,6 @@ dependencies {
     implementation("io.coil-kt:coil:2.2.2")
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.window:window:1.2.0-beta03")
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation("androidx.navigation:navigation-fragment-ktx:2.7.4")
     implementation("androidx.navigation:navigation-ui-ktx:2.7.4")
