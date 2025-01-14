@@ -1,5 +1,4 @@
 # SPDX-FileCopyrightText: 2024 Citron HomeBrew Emulator Project
-# SPDX-FileCopyrightText: 2024 kleidis
 
 function(copy_citron_Qt6_deps target_dir)
     include(WindowsCopyFiles)

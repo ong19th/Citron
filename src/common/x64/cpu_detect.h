@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project & 2025 citron Homebrew Project
-// SPDX-FileCopyrightText: Copyright 2013 Dolphin Emulator Project / 2015 Citra Emulator Project & 2025 Citron Homebrew Project
+// SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2013 Dolphin Emulator Project / 2015 Citra Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once

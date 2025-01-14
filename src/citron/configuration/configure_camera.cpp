@@ -1,4 +1,4 @@
-// Text : Copyright 2022 yuzu Emulator Project & 2025 citron Homebrew Project
+// Text : Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <memory>

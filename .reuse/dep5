@@ -9,7 +9,7 @@ Files: dist/english_plurals/*
        dist/qt_themes/*/icons/48x48/sd_card.png
        dist/qt_themes/*/icons/index.theme
        dist/qt_themes/default/style.qss
-Copyright: yuzu Emulator Project & 2025 citron Homebrew Project
+Copyright: yuzu Emulator Project
 License: GPL-2.0-or-later
 
 Files: dist/qt_themes/default/icons/256x256/citron.png
@@ -17,7 +17,7 @@ Files: dist/qt_themes/default/icons/256x256/citron.png
        dist/citron.icns
        dist/citron.ico
        dist/citron.svg
-Copyright: yuzu Emulator Project & 2025 citron Homebrew Project
+Copyright: yuzu Emulator Project
 License: GPL-2.0-or-later
 
 Files: dist/qt_themes/qdarkstyle*/LICENSE.*
@@ -109,12 +109,12 @@ Copyright: 2021 Advanced Micro Devices, Inc.
 License: MIT
 
 Files: src/citron/*.ui
-Copyright: 2018-2022 yuzu Emulator Project & 2025 citron Homebrew Project
+Copyright: 2018-2022 yuzu Emulator Project
 License: GPL-2.0-or-later
 
 Files: src/citron/compatdb.ui
        src/citron/main.ui
-Copyright: 2014-2017 Citra Emulator Project & 2025 Citron Homebrew Project
+Copyright: 2014-2017 Citra Emulator Project
 License: GPL-2.0-or-later
 
 Files: src/citron/loading_screen.ui
@@ -125,27 +125,27 @@ Files: src/citron/applets/aboutdialog.ui
        src/citron/applets/qt_software_keyboard.ui
        src/citron/util/overlay_dialog.ui
 Copyright: 2020-2021 Its-Rei <kupfel@gmail.com>
-           2020-2021 yuzu Emulator Project & 2025 citron Homebrew Project
+           2020-2021 yuzu Emulator Project
 License: GPL-2.0-or-later
 
 Files: vcpkg.json
-Copyright: 2022 yuzu Emulator Project & 2025 citron Homebrew Project
+Copyright: 2022 yuzu Emulator Project
 License: GPL-3.0-or-later
 
 Files: .github/ISSUE_TEMPLATE/*
-Copyright: 2022 yuzu Emulator Project & 2025 citron Homebrew Project
+Copyright: 2022 yuzu Emulator Project
 License: GPL-2.0-or-later
 
 Files: src/android/app/src/ea/res/*
-Copyright: 2023 yuzu Emulator Project & 2025 citron Homebrew Project
+Copyright: 2023 yuzu Emulator Project
 License: GPL-3.0-or-later
 
 Files: src/android/app/src/main/res/*
-Copyright: 2023 yuzu Emulator Project & 2025 citron Homebrew Project
+Copyright: 2023 yuzu Emulator Project
 License: GPL-3.0-or-later
 
 Files: src/android/gradle/wrapper/*
-Copyright: 2023 yuzu Emulator Project & 2025 citron Homebrew Project
+Copyright: 2023 yuzu Emulator Project
 License: GPL-3.0-or-later
 
 Files: externals/stb/*
@@ -157,5 +157,5 @@ Copyright: Copyright 2017-2019 Feral Interactive
 License: BSD-3-Clause
 
 Files: src/android/app/debug.keystore
-Copyright: 2023 yuzu Emulator Project & 2025 citron Homebrew Project
+Copyright: 2023 yuzu Emulator Project
 License: GPL-3.0-or-later

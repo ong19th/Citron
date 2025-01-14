@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Citron Homebrew Emulator Project & vampiric_x 2025
+// SPDX-FileCopyrightText: 2025 Citron Homebrew Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cinttypes>
