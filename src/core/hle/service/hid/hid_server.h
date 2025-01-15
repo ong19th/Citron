@@ -31,6 +31,8 @@ public:
 
     std::shared_ptr<ResourceManager> GetResourceManager();
 
+    Result SetGestureOutputRanges(u32, u32, u32, u32);
+
 private:
     Result CreateAppletResource(OutInterface<IAppletResource> out_applet_resource,
                                 ClientAppletResourceUserId aruid);

@@ -184,6 +184,7 @@ IHidServer::IHidServer(Core::System& system_, std::shared_ptr<ResourceManager> r
         {1003, C<&IHidServer::IsFirmwareUpdateNeededForNotification>, "IsFirmwareUpdateNeededForNotification"},
         {1004, C<&IHidServer::SetTouchScreenResolution>, "SetTouchScreenResolution"},
         {2000, nullptr, "ActivateDigitizer"},
+        {92, C<&IHidServer::SetGestureOutputRanges>, "SetGestureOutputRanges"},
     };
     // clang-format on
 
@@ -1434,6 +1435,12 @@ Result IHidServer::SetTouchScreenResolution(u32 width, u32 height,
 std::shared_ptr<ResourceManager> IHidServer::GetResourceManager() {
     resource_manager->Initialize();
     return resource_manager;
+}
+
+Result IHidServer::SetGestureOutputRanges(u32 param1, u32 param2, u32 param3, u32 param4) {
+    LOG_WARNING(Service_HID, "SetGestureOutputRanges called with params: {}, {}, {}, {}", param1, param2, param3, param4);
+    // REF: https://switchbrew.org/wiki/HID_services , Undocumented. 92 [18.0.0+] SetGestureOutputRanges
+    R_SUCCEED();
 }
 
 } // namespace Service::HID
