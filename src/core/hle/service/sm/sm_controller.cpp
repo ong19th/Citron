@@ -68,11 +68,13 @@ void Controller::CloneCurrentObjectEx(HLERequestContext& ctx) {
 }
 
 void Controller::QueryPointerBufferSize(HLERequestContext& ctx) {
-    LOG_WARNING(Service, "(STUBBED) called");
+    LOG_DEBUG(Service, "called");
+
+    u16 pointer_buffer_size = 0x8000; // Replace with the actual size if known
 
     IPC::ResponseBuilder rb{ctx, 3};
     rb.Push(ResultSuccess);
-    rb.Push<u16>(0x8000);
+    rb.Push<u16>(pointer_buffer_size);
 }
 
 // https://switchbrew.org/wiki/IPC_Marshalling
