@@ -386,6 +386,14 @@ abstract class SettingsItem(
                 override fun reset() = setBoolean(defaultValue)
             }
             put(SwitchSetting(fastmem, R.string.fastmem))
+
+            put(
+                SwitchSetting(
+                    BooleanSetting.USE_AUTO_STUB,
+                    titleId = R.string.use_auto_stub,
+                    descriptionId = R.string.use_auto_stub_description
+                )
+            )
         }
     }
 }

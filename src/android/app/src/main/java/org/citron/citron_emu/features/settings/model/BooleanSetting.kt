@@ -26,7 +26,8 @@ enum class BooleanSetting(override val key: String) : AbstractBooleanSetting {
     SHOW_PERFORMANCE_OVERLAY("show_performance_overlay"),
     SHOW_INPUT_OVERLAY("show_input_overlay"),
     TOUCHSCREEN("touchscreen"),
-    SHOW_THERMAL_OVERLAY("show_thermal_overlay");
+    SHOW_THERMAL_OVERLAY("show_thermal_overlay"),
+    USE_AUTO_STUB("use_auto_stub");
 
     override fun getBoolean(needsGlobal: Boolean): Boolean =
         NativeConfig.getBoolean(key, needsGlobal)
