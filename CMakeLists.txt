@@ -327,7 +327,7 @@ find_package(ZLIB REQUIRED)
 find_package(zstd REQUIRED)
 
 if (NOT CITRON_USE_EXTERNAL_VULKAN_HEADERS)
-    find_package(VulkanHeaders 1.3.274 REQUIRED)
+    find_package(VulkanHeaders 1.4.304 REQUIRED)
 endif()
 
 if (NOT CITRON_USE_EXTERNAL_VULKAN_UTILITY_LIBRARIES)
