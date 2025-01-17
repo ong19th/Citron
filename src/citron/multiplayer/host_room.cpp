@@ -10,6 +10,10 @@
 #include <QMetaType>
 #include <QTime>
 #include <QtConcurrent/QtConcurrentRun>
+#include <QHostInfo>
+#include <QNetworkInterface>
+#include <QClipboard>
+#include <QApplication>
 #include "common/logging/log.h"
 #include "common/settings.h"
 #include "core/core.h"
@@ -53,6 +57,7 @@ HostRoomWindow::HostRoomWindow(QWidget* parent, QStandardItemModel* list,
 
     // Connect all the widgets to the appropriate events
     connect(ui->host, &QPushButton::clicked, this, &HostRoomWindow::Host);
+    connect(ui->copy_ip_button, &QPushButton::clicked, this, &HostRoomWindow::CopyIPToClipboard);
 
     // Restore the settings:
     ui->username->setText(
@@ -76,6 +81,8 @@ HostRoomWindow::HostRoomWindow(QWidget* parent, QStandardItemModel* list,
     }
     ui->room_description->setText(
         QString::fromStdString(UISettings::values.multiplayer_room_description.GetValue()));
+
+    SetLocalIPAddress();
 }
 
 HostRoomWindow::~HostRoomWindow() = default;
@@ -148,6 +155,7 @@ void HostRoomWindow::Host() {
             }
         }
         ui->host->setDisabled(true);
+        std::string ip_address = ui->server_address_box->text().toStdString();
 
         const AnnounceMultiplayerRoom::GameInfo game{
             .name = ui->game_list->currentData(Qt::DisplayRole).toString().toStdString(),
@@ -164,7 +172,7 @@ void HostRoomWindow::Host() {
         if (auto room = room_network.GetRoom().lock()) {
             const bool created =
                 room->Create(ui->room_name->text().toStdString(),
-                             ui->room_description->toPlainText().toStdString(), "", port, password,
+                             ui->room_description->toPlainText().toStdString(), ip_address, port, password,
                              ui->max_player->value(), Settings::values.citron_username.GetValue(),
                              game, CreateVerifyBackend(is_public), ban_list);
             if (!created) {
@@ -216,7 +224,7 @@ void HostRoomWindow::Host() {
         }
 #endif
         // TODO: Check what to do with this
-        member->Join(ui->username->text().toStdString(), "127.0.0.1", port, 0,
+        member->Join(ui->username->text().toStdString(), ip_address.c_str(), port, 0,
                      Network::NoPreferredIP, password, token);
 
         // Store settings
@@ -260,4 +268,26 @@ bool ComboBoxProxyModel::lessThan(const QModelIndex& left, const QModelIndex& ri
     auto leftData = left.data(GameListItemPath::TitleRole).toString();
     auto rightData = right.data(GameListItemPath::TitleRole).toString();
     return leftData.compare(rightData) < 0;
+}
+
+void HostRoomWindow::SetLocalIPAddress() {
+    QString local_ip;
+
+    foreach (const QHostAddress &address, QNetworkInterface::allAddresses()) {
+        if (address.protocol() == QAbstractSocket::IPv4Protocol && address != QHostAddress(QHostAddress::LocalHost)) {
+            local_ip = address.toString();
+            break;
+        }
+    }
+
+    if (!local_ip.isEmpty()) {
+        ui->server_address_box->setText(local_ip);
+    } else {
+        ui->server_address_box->setPlaceholderText(tr("Enter Server Address"));
+    }
+}
+
+void HostRoomWindow::CopyIPToClipboard() {
+    QClipboard* clipboard = QApplication::clipboard();
+    clipboard->setText(ui->server_address_box->text());
 }
