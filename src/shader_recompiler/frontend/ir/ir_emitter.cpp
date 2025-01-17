@@ -261,7 +261,8 @@ static U1 GetFlowTest(IREmitter& ir, FlowTest flow_test) {
     case FlowTest::RGT:
         return ir.LogicalAnd(ir.LogicalNot(ir.GetSFlag()), ir.LogicalNot(ir.GetZFlag()));
     case FlowTest::FCSM_TR:
-        return ir.LogicalAnd(ir.GetSFlag(), ir.LogicalNot(ir.GetZFlag()));
+        LOG_WARNING(Shader, "(STUBBED) FCSM_TR");
+        return ir.Imm1(false);
     case FlowTest::CSM_TA:
     case FlowTest::CSM_TR:
     case FlowTest::CSM_MX:
