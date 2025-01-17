@@ -7,6 +7,8 @@ import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.net.Uri
@@ -1094,10 +1096,15 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
     }
 
     private fun getBatteryTemperature(context: Context): Float {
-        val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
-        // Get temperature in tenths of a degree Celsius
-        val temperature = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_TEMPERATURE)
-        // Convert to degrees Celsius
-        return temperature / 10.0f
+        try {
+            val batteryIntent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+            // Temperature in tenths of a degree Celsius
+            val temperature = batteryIntent?.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) ?: 0
+            // Convert to degrees Celsius
+            return temperature / 10.0f
+        } catch (e: Exception) {
+            Log.error("[EmulationFragment] Failed to get battery temperature: ${e.message}")
+            return 0.0f
+        }
     }
 }
