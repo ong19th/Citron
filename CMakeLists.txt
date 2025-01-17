@@ -673,36 +673,3 @@ if(ENABLE_QT AND UNIX AND NOT APPLE)
     install(FILES "dist/org.citron_emu.citron.metainfo.xml"
             DESTINATION "share/metainfo")
 endif()
-
-# Set CPU architecture compatibility flags
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64|AMD64")
-    # Default to x86-64 baseline for maximum compatibility
-    set(ISA_FLAGS "-march=x86-64")
-
-    # Allow override via CMake option
-    option(CITRON_USE_X86_64_V2 "Enable x86-64-v2 instruction set" OFF)
-
-    if(CITRON_USE_X86_64_V2)
-        set(ISA_FLAGS "-march=x86-64-v2")
-    endif()
-
-    # Set for main project
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ISA_FLAGS}")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ISA_FLAGS}")
-
-    # Set for vcpkg dependencies
-    set(VCPKG_CXX_FLAGS "${ISA_FLAGS}")
-    set(VCPKG_C_FLAGS "${ISA_FLAGS}")
-
-    # Set toolchain options  for vcpkg
-    set(VCPKG_CHAINLOAD_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/x86-64-toolchain.cmake")
-
-    # Ensure we're not getting overridden by system defaults
-    add_compile_options(${ISA_FLAGS})
-
-    # Force disable higher ISA levels
-    add_compile_definitions(
-        __x86_64_v3__=0
-        __x86_64_v4__=0
-    )
-endif()
