@@ -34,7 +34,7 @@ std::unique_ptr<TranslationMap> InitializeTranslations(QWidget* parent) {
     INSERT(Settings, net_connect_applet_mode, tr("Net connect"), QStringLiteral());
     INSERT(Settings, player_select_applet_mode, tr("Player select"), QStringLiteral());
     INSERT(Settings, swkbd_applet_mode, tr("Software keyboard"), QStringLiteral());
-    INSERT(Settings, mii_edit_applet_mode, tr("Mii Edit"), QStringLiteral());
+    INSERT(Settings, mii_edit_applet_mode, tr("Mii Editor"), QStringLiteral());
     INSERT(Settings, web_applet_mode, tr("Online web"), QStringLiteral());
     INSERT(Settings, shop_applet_mode, tr("Shop"), QStringLiteral());
     INSERT(Settings, photo_viewer_applet_mode, tr("Photo viewer"), QStringLiteral());

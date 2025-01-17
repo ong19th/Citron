@@ -261,12 +261,23 @@ static U1 GetFlowTest(IREmitter& ir, FlowTest flow_test) {
     case FlowTest::RGT:
         return ir.LogicalAnd(ir.LogicalNot(ir.GetSFlag()), ir.LogicalNot(ir.GetZFlag()));
     case FlowTest::FCSM_TR:
-        return ir.LogicalAnd(ir.GetSFlag(), ir.LogicalNot(ir.GetZFlag()));
+        LOG_WARNING(Shader, "(STUBBED) FCSM_TR");
+        return ir.Imm1(false);
     case FlowTest::CSM_TA:
+        LOG_WARNING(Shader, "(STUBBED) CSM_TA");
+        return ir.Imm1(false);
     case FlowTest::CSM_TR:
+        LOG_WARNING(Shader, "(STUBBED) CSM_TR");
+        return ir.Imm1(false);
     case FlowTest::CSM_MX:
+        LOG_WARNING(Shader, "(STUBBED) CSM_MX");
+        return ir.Imm1(false);
     case FlowTest::FCSM_TA:
+        LOG_WARNING(Shader, "(STUBBED) FCSM_TA");
+        return ir.Imm1(false);
     case FlowTest::FCSM_MX:
+        LOG_WARNING(Shader, "(STUBBED) FCSM_MX");
+        return ir.Imm1(false);
     default:
         throw NotImplementedException("Flow test {}", flow_test);
     }

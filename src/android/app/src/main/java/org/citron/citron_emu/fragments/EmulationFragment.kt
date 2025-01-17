@@ -10,6 +10,7 @@ import android.content.DialogInterface
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.net.Uri
+import android.os.BatteryManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -531,59 +532,8 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                 if (emulationViewModel.emulationStarted.value &&
                     !emulationViewModel.isEmulationStopping.value
                 ) {
-                    val thermalStatus = when (powerManager.currentThermalStatus) {
-                        PowerManager.THERMAL_STATUS_LIGHT -> 0.25f
-                        PowerManager.THERMAL_STATUS_MODERATE -> 0.5f
-                        PowerManager.THERMAL_STATUS_SEVERE -> 0.75f
-                        PowerManager.THERMAL_STATUS_CRITICAL,
-                        PowerManager.THERMAL_STATUS_EMERGENCY,
-                        PowerManager.THERMAL_STATUS_SHUTDOWN -> 1.0f
-                        else -> 0f
-                    }
-
-                    // Get temperature from battery thermal sensor
-                    val temperature = try {
-                        val process = Runtime.getRuntime().exec("cat /sys/class/power_supply/battery/temp")
-                        val reader = process.inputStream.bufferedReader()
-                        val temp = reader.readLine().toFloat() / 10f // Convert from decidegrees to degrees
-                        reader.close()
-                        temp
-                    } catch (e: Exception) {
-                        0f
-                    }
-
-                    // Convert to Fahrenheit
-                    val fahrenheit = (temperature * 9f / 5f) + 32f
-
-                    if (_binding != null) {
-                        // Color interpolation based on temperature (green at 30°C, red at 45°C)
-                        val normalizedTemp = ((temperature - 30f) / 15f).coerceIn(0f, 1f)
-                        val red = (normalizedTemp * 255).toInt()
-                        val green = ((1f - normalizedTemp) * 255).toInt()
-                        val color = android.graphics.Color.rgb(red, green, 0)
-
-                        // Create a modern progress bar using block elements
-                        val progressBarLength = 12
-                        val filledBars = (thermalStatus * progressBarLength).toInt()
-                        val progressBar = buildString {
-                            append("│") // Left border
-                            repeat(filledBars) { append("█") }
-                            repeat(progressBarLength - filledBars) { append("░") }
-                            append("│") // Right border
-
-                            // Add percentage
-                            append(" ")
-                            append(String.format("%3d%%", (thermalStatus * 100).toInt()))
-                        }
-
-                        binding.showThermalsText.setTextColor(color)
-                        binding.showThermalsText.text = String.format(
-                            "%s\n%.1f°C • %.1f°F",
-                            progressBar,
-                            temperature,
-                            fahrenheit
-                        )
-                    }
+                    val temperature = getBatteryTemperature(requireContext())
+                    updateThermalOverlay(temperature)
                     thermalStatsUpdateHandler.postDelayed(thermalStatsUpdater!!, 1000)
                 }
             }
@@ -592,6 +542,53 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
             if (thermalStatsUpdater != null) {
                 thermalStatsUpdateHandler.removeCallbacks(thermalStatsUpdater!!)
             }
+        }
+    }
+
+    private fun updateThermalOverlay(temperature: Float) {
+        if (BooleanSetting.SHOW_THERMAL_OVERLAY.getBoolean() &&
+            emulationViewModel.emulationStarted.value &&
+            !emulationViewModel.isEmulationStopping.value
+        ) {
+            // Get thermal status
+            val thermalStatus = when (powerManager.currentThermalStatus) {
+                PowerManager.THERMAL_STATUS_LIGHT -> 0.25f
+                PowerManager.THERMAL_STATUS_MODERATE -> 0.5f
+                PowerManager.THERMAL_STATUS_SEVERE -> 0.75f
+                PowerManager.THERMAL_STATUS_CRITICAL,
+                PowerManager.THERMAL_STATUS_EMERGENCY,
+                PowerManager.THERMAL_STATUS_SHUTDOWN -> 1.0f
+                else -> 0f
+            }
+
+            // Convert to Fahrenheit for additional info
+            val fahrenheit = (temperature * 9f / 5f) + 32f
+
+            // Create progress bar using block elements
+            val progressBarLength = 12
+            val filledBars = (thermalStatus * progressBarLength).toInt()
+            val progressBar = buildString {
+                append("│") // Left border
+                repeat(filledBars) { append("█") }
+                repeat(progressBarLength - filledBars) { append("░") }
+                append("│") // Right border
+                append(" ")
+                append(String.format("%3d%%", (thermalStatus * 100).toInt()))
+            }
+
+            // Color interpolation based on temperature (green at 30°C, red at 45°C)
+            val normalizedTemp = ((temperature - 30f) / 15f).coerceIn(0f, 1f)
+            val red = (normalizedTemp * 255).toInt()
+            val green = ((1f - normalizedTemp) * 255).toInt()
+            val color = android.graphics.Color.rgb(red, green, 0)
+
+            binding.showThermalsText.setTextColor(color)
+            binding.showThermalsText.text = String.format(
+                "%s\n%.1f°C • %.1f°F",
+                progressBar,
+                temperature,
+                fahrenheit
+            )
         }
     }
 
@@ -1094,5 +1091,13 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
     companion object {
         private val perfStatsUpdateHandler = Handler(Looper.myLooper()!!)
         private val thermalStatsUpdateHandler = Handler(Looper.myLooper()!!)
+    }
+
+    private fun getBatteryTemperature(context: Context): Float {
+        val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+        // Get temperature in tenths of a degree Celsius
+        val temperature = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_TEMPERATURE)
+        // Convert to degrees Celsius
+        return temperature / 10.0f
     }
 }

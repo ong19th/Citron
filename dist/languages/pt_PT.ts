@@ -409,7 +409,7 @@ Isto banirá tanto o nome de usuário do fórum como o endereço IP.</translatio
     </message>
     <message>
         <location filename="../../src/citron/configuration/shared_translation.cpp" line="37"/>
-        <source>Mii Edit</source>
+        <source>Mii Editor</source>
         <translation>Editar Mii</translation>
     </message>
     <message>
@@ -6152,7 +6152,7 @@ Por favor, use esse recurso apenas para instalar atualizações e DLC.</translat
     </message>
     <message>
         <location filename="../../src/citron/main.cpp" line="4451"/>
-        <source>Mii Edit Applet</source>
+        <source>Mii Editor Applet</source>
         <translation>Applet Editor de Miis</translation>
     </message>
     <message>

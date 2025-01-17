@@ -408,7 +408,7 @@ Dies würde deren Forum-Benutzernamen und deren IP-Adresse sperren.</translation
     </message>
     <message>
         <location filename="../../src/citron/configuration/shared_translation.cpp" line="37"/>
-        <source>Mii Edit</source>
+        <source>Mii Editor</source>
         <translation type="unfinished"/>
     </message>
     <message>
@@ -6121,7 +6121,7 @@ Bitte nutze diese Funktion nur zum Installieren von Updates und DLC.</translatio
     </message>
     <message>
         <location filename="../../src/citron/main.cpp" line="4451"/>
-        <source>Mii Edit Applet</source>
+        <source>Mii Editor Applet</source>
         <translation>Mii-Edit-Applet</translation>
     </message>
     <message>

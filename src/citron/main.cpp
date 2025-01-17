@@ -4445,7 +4445,7 @@ void GMainWindow::OnMiiEdit() {
 
     auto mii_applet_nca = bis_system->GetEntry(MiiEditId, FileSys::ContentRecordType::Program);
     if (!mii_applet_nca) {
-        QMessageBox::warning(this, tr("Mii Edit Applet"),
+        QMessageBox::warning(this, tr("Mii Editor Applet"),
                              tr("Mii editor is not available. Please reinstall firmware."));
         return;
     }
