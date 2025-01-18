@@ -91,27 +91,25 @@ public:
 
     void ExceptionRaised(u32 pc, Dynarmic::A32::Exception exception) override {
         switch (exception) {
-        case Dynarmic::A32::Exception::NoExecuteFault:
-            LOG_CRITICAL(Core_ARM, "Cannot execute instruction at unmapped address {:#08x}", pc);
-            ReturnException(pc, PrefetchAbort);
-            return;
-        case Dynarmic::A32::Exception::AccessViolation:
-            if (pc == 0 || pc < 0x1000) {
-                LOG_CRITICAL(Core_ARM, "Null pointer dereference at {:#08x}", pc);
-                ReturnException(pc, DataAbort);
+            case Dynarmic::A32::Exception::UndefinedInstruction:
+                LOG_CRITICAL(Core_ARM, "Undefined instruction at PC = 0x{:08X}", pc);
+                m_parent.GetContext(m_parent.m_breakpoint_context);
+                m_parent.m_jit->HaltExecution(DataAbort);
+                break;
+            case Dynarmic::A32::Exception::NoExecuteFault:
+                LOG_CRITICAL(Core_ARM, "Cannot execute instruction at unmapped address {:#08x}", pc);
+                ReturnException(pc, PrefetchAbort);
                 return;
-            }
-            [[fallthrough]];
-        default:
-            if (m_debugger_enabled) {
-                ReturnException(pc, InstructionBreakpoint);
-                return;
-            }
+            default:
+                if (m_debugger_enabled) {
+                    ReturnException(pc, InstructionBreakpoint);
+                    return;
+                }
 
-            m_parent.LogBacktrace(m_process);
-            LOG_CRITICAL(Core_ARM,
-                         "ExceptionRaised(exception = {}, pc = {:08X}, code = {:08X}, thumb = {})",
-                         exception, pc, m_memory.Read32(pc), m_parent.IsInThumbMode());
+                m_parent.LogBacktrace(m_process);
+                LOG_CRITICAL(Core_ARM,
+                            "ExceptionRaised(exception = {}, pc = {:08X}, code = {:08X}, thumb = {})",
+                            exception, pc, m_memory.Read32(pc), m_parent.IsInThumbMode());
         }
     }
 
