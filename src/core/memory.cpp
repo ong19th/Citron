@@ -737,12 +737,21 @@ struct Memory::Impl {
         const u8* const ptr = GetPointerImpl(
             GetInteger(vaddr),
             [vaddr]() {
+                // Add special handling for null pointer reads
+                if (GetInteger(vaddr) == 0 || GetInteger(vaddr) < 0x1000) {
+                    LOG_ERROR(HW_Memory, "Null pointer Read{} @ 0x{:016X}", sizeof(T) * 8,
+                              GetInteger(vaddr));
+                    return;
+                }
                 LOG_ERROR(HW_Memory, "Unmapped Read{} @ 0x{:016X}", sizeof(T) * 8,
                           GetInteger(vaddr));
             },
             [&]() { HandleRasterizerDownload(GetInteger(vaddr), sizeof(T)); });
         if (ptr) {
             std::memcpy(&result, ptr, sizeof(T));
+        } else if (GetInteger(vaddr) == 0) {
+            // Return 0 for null pointer reads instead of random memory
+            result = 0;
         }
         return result;
     }
@@ -761,6 +770,12 @@ struct Memory::Impl {
         u8* const ptr = GetPointerImpl(
             GetInteger(vaddr),
             [vaddr, data]() {
+                // Add special handling for null pointer writes
+                if (GetInteger(vaddr) == 0 || GetInteger(vaddr) < 0x1000) {
+                    LOG_ERROR(HW_Memory, "Null pointer Write{} @ 0x{:016X} = 0x{:016X}", sizeof(T) * 8,
+                              GetInteger(vaddr), static_cast<u64>(data));
+                    return;
+                }
                 LOG_ERROR(HW_Memory, "Unmapped Write{} @ 0x{:016X} = 0x{:016X}", sizeof(T) * 8,
                           GetInteger(vaddr), static_cast<u64>(data));
             },
@@ -768,6 +783,7 @@ struct Memory::Impl {
         if (ptr) {
             std::memcpy(ptr, &data, sizeof(T));
         }
+        // Silently ignore writes to null pointer
     }
 
     template <typename T>

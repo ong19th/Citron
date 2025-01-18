@@ -95,6 +95,13 @@ public:
             LOG_CRITICAL(Core_ARM, "Cannot execute instruction at unmapped address {:#08x}", pc);
             ReturnException(pc, PrefetchAbort);
             return;
+        case Dynarmic::A32::Exception::AccessViolation:
+            if (pc == 0 || pc < 0x1000) {
+                LOG_CRITICAL(Core_ARM, "Null pointer dereference at {:#08x}", pc);
+                ReturnException(pc, DataAbort);
+                return;
+            }
+            [[fallthrough]];
         default:
             if (m_debugger_enabled) {
                 ReturnException(pc, InstructionBreakpoint);
