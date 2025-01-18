@@ -409,7 +409,7 @@ Bu işlem onların hem forum kullanıcı adını hem de IP adresini banlar.</tra
     </message>
     <message>
         <location filename="../../src/citron/configuration/shared_translation.cpp" line="37"/>
-        <source>Mii Edit</source>
+        <source>Mii Editor</source>
         <translation type="unfinished"/>
     </message>
     <message>
@@ -6112,7 +6112,7 @@ Lütfen bu özelliği sadece güncelleme ve DLC yüklemek için kullanın.</tran
     </message>
     <message>
         <location filename="../../src/citron/main.cpp" line="4451"/>
-        <source>Mii Edit Applet</source>
+        <source>Mii Editor Applet</source>
         <translation type="unfinished"/>
     </message>
     <message>

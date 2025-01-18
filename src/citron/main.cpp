@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Citron Homebrew Emulator Project & vampiric_x 2025
+// SPDX-FileCopyrightText: 2025 Citron Homebrew Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cinttypes>
@@ -4445,7 +4445,7 @@ void GMainWindow::OnMiiEdit() {
 
     auto mii_applet_nca = bis_system->GetEntry(MiiEditId, FileSys::ContentRecordType::Program);
     if (!mii_applet_nca) {
-        QMessageBox::warning(this, tr("Mii Edit Applet"),
+        QMessageBox::warning(this, tr("Mii Editor Applet"),
                              tr("Mii editor is not available. Please reinstall firmware."));
         return;
     }

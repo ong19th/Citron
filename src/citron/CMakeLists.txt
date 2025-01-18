@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Citron Homebrew Emulator Project & vampiric_x 2025
+# SPDX-FileCopyrightText: 2025 Citron Homebrew Emulator Project
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 set(CMAKE_AUTOMOC ON)
@@ -434,6 +434,10 @@ if (CITRON_USE_QT_WEB_ENGINE)
     target_link_libraries(citron PRIVATE Qt${QT_MAJOR_VERSION}::WebEngineCore Qt${QT_MAJOR_VERSION}::WebEngineWidgets)
     target_compile_definitions(citron PRIVATE -DCITRON_USE_QT_WEB_ENGINE)
 endif ()
+
+target_link_libraries(citron PRIVATE PRIVATE
+    Qt::Network
+)
 
 if(UNIX AND NOT APPLE)
     install(TARGETS citron)

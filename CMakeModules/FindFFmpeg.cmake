@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2019 Citra Emulator Project & 2025 Citron Homebrew Project
+# SPDX-FileCopyrightText: 2019 Citra Emulator Project
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 # FindFFmpeg

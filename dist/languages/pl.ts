@@ -409,7 +409,7 @@ To zbanuje jego/jej nick na forum, oraz jego/jej adres IP.</translation>
     </message>
     <message>
         <location filename="../../src/citron/configuration/shared_translation.cpp" line="37"/>
-        <source>Mii Edit</source>
+        <source>Mii Editor</source>
         <translation type="unfinished"/>
     </message>
     <message>
@@ -6111,7 +6111,7 @@ Proszę, używaj tej funkcji tylko do instalowania łatek i DLC.</translation>
     </message>
     <message>
         <location filename="../../src/citron/main.cpp" line="4451"/>
-        <source>Mii Edit Applet</source>
+        <source>Mii Editor Applet</source>
         <translation type="unfinished"/>
     </message>
     <message>

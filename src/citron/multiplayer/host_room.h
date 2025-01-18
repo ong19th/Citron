@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2017 Citra Emulator Project & 2025 Citron Homebrew Project
+// SPDX-FileCopyrightText: Copyright 2017 Citra Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -51,6 +51,8 @@ signals:
 
 private:
     void Host();
+    void SetLocalIPAddress();
+    void CopyIPToClipboard();
     std::unique_ptr<Network::VerifyUser::Backend> CreateVerifyBackend(bool use_validation) const;
 
     std::unique_ptr<Ui::HostRoom> ui;

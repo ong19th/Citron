@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
 
+    <!-- Settings strings -->
+    <string name="use_auto_stub">Use Auto Stub</string>
+    <string name="use_auto_stub_description">Automatically stub missing services and functions. This may improve compatibility but can cause crashes and stability issues.</string>
+
     <!-- General application strings -->
     <string name="app_name" translatable="false">citron</string>
     <string name="app_disclaimer">This software will run games for the Nintendo Switch game console. No game titles or keys are included.&lt;br /&gt;&lt;br /&gt;Before you begin, please locate your <![CDATA[<b> prod.keys </b>]]> file on your device storage.&lt;br /&gt;&lt;br /&gt;<![CDATA[<a href="https://citron-emu.org/help/quickstart">Learn more</a>]]></string>

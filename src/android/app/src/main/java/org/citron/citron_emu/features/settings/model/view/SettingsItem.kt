@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2023 yuzu Emulator Project & 2025 citron Homebrew Project
+// SPDX-FileCopyrightText: 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 package org.citron.citron_emu.features.settings.model.view
@@ -386,6 +386,14 @@ abstract class SettingsItem(
                 override fun reset() = setBoolean(defaultValue)
             }
             put(SwitchSetting(fastmem, R.string.fastmem))
+
+            put(
+                SwitchSetting(
+                    BooleanSetting.USE_AUTO_STUB,
+                    titleId = R.string.use_auto_stub,
+                    descriptionId = R.string.use_auto_stub_description
+                )
+            )
         }
     }
 }

@@ -409,7 +409,7 @@ Dit zou zowel hun forum gebruikersnaam als hun IP-adres verbannen.</translation>
     </message>
     <message>
         <location filename="../../src/citron/configuration/shared_translation.cpp" line="37"/>
-        <source>Mii Edit</source>
+        <source>Mii Editor</source>
         <translation type="unfinished"/>
     </message>
     <message>
@@ -6108,7 +6108,7 @@ Gebruik deze functie alleen om updates en DLC te installeren.</translation>
     </message>
     <message>
         <location filename="../../src/citron/main.cpp" line="4451"/>
-        <source>Mii Edit Applet</source>
+        <source>Mii Editor Applet</source>
         <translation type="unfinished"/>
     </message>
     <message>

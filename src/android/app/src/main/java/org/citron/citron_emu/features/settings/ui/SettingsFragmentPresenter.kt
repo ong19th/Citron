@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2023 yuzu Emulator Project & 2025 citron Homebrew Project
+// SPDX-FileCopyrightText: 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 package org.citron.citron_emu.features.settings.ui
@@ -158,6 +158,7 @@ class SettingsFragmentPresenter(
             add(BooleanSetting.RENDERER_USE_SPEED_LIMIT.key)
             add(ShortSetting.RENDERER_SPEED_LIMIT.key)
             add(BooleanSetting.USE_DOCKED_MODE.key)
+            add(BooleanSetting.USE_AUTO_STUB.key)
             add(IntSetting.REGION_INDEX.key)
             add(IntSetting.LANGUAGE_INDEX.key)
             add(BooleanSetting.USE_CUSTOM_RTC.key)

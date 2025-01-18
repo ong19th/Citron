@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2023 yuzu Emulator Project & 2025 citron Homebrew Project
+// SPDX-FileCopyrightText: 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 package org.citron.citron_emu.fragments
@@ -7,9 +7,12 @@ import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.net.Uri
+import android.os.BatteryManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -531,45 +534,8 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                 if (emulationViewModel.emulationStarted.value &&
                     !emulationViewModel.isEmulationStopping.value
                 ) {
-                    val thermalStatus = when (powerManager.currentThermalStatus) {
-                        PowerManager.THERMAL_STATUS_LIGHT -> "😥"
-                        PowerManager.THERMAL_STATUS_MODERATE -> "🥵"
-                        PowerManager.THERMAL_STATUS_SEVERE -> "🔥"
-                        PowerManager.THERMAL_STATUS_CRITICAL,
-                        PowerManager.THERMAL_STATUS_EMERGENCY,
-                        PowerManager.THERMAL_STATUS_SHUTDOWN -> "☢️"
-                        else -> "🙂"
-                    }
-
-                    // Get temperature in Celsius from thermal sensor
-                    val temperature = try {
-                        val process = Runtime.getRuntime().exec("cat /sys/class/thermal/thermal_zone0/temp")
-                        val reader = process.inputStream.bufferedReader()
-                        val temp = reader.readLine().toFloat() / 1000f // Convert from millicelsius to celsius
-                        reader.close()
-                        temp
-                    } catch (e: Exception) {
-                        0f
-                    }
-
-                    // Convert to Fahrenheit
-                    val fahrenheit = (temperature * 9f / 5f) + 32f
-
-                    if (_binding != null) {
-                        // Color interpolation based on temperature (green at 45°C, red at 85°C)
-                        val normalizedTemp = ((temperature - 45f) / 40f).coerceIn(0f, 1f)
-                        val red = (normalizedTemp * 255).toInt()
-                        val green = ((1f - normalizedTemp) * 255).toInt()
-                        val color = android.graphics.Color.rgb(red, green, 0)
-
-                        binding.showThermalsText.setTextColor(color)
-                        binding.showThermalsText.text = String.format(
-                            "%s %.1f°C\n%.1f°F",
-                            thermalStatus,
-                            temperature,
-                            fahrenheit
-                        )
-                    }
+                    val temperature = getBatteryTemperature(requireContext())
+                    updateThermalOverlay(temperature)
                     thermalStatsUpdateHandler.postDelayed(thermalStatsUpdater!!, 1000)
                 }
             }
@@ -578,6 +544,53 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
             if (thermalStatsUpdater != null) {
                 thermalStatsUpdateHandler.removeCallbacks(thermalStatsUpdater!!)
             }
+        }
+    }
+
+    private fun updateThermalOverlay(temperature: Float) {
+        if (BooleanSetting.SHOW_THERMAL_OVERLAY.getBoolean() &&
+            emulationViewModel.emulationStarted.value &&
+            !emulationViewModel.isEmulationStopping.value
+        ) {
+            // Get thermal status
+            val thermalStatus = when (powerManager.currentThermalStatus) {
+                PowerManager.THERMAL_STATUS_LIGHT -> 0.25f
+                PowerManager.THERMAL_STATUS_MODERATE -> 0.5f
+                PowerManager.THERMAL_STATUS_SEVERE -> 0.75f
+                PowerManager.THERMAL_STATUS_CRITICAL,
+                PowerManager.THERMAL_STATUS_EMERGENCY,
+                PowerManager.THERMAL_STATUS_SHUTDOWN -> 1.0f
+                else -> 0f
+            }
+
+            // Convert to Fahrenheit for additional info
+            val fahrenheit = (temperature * 9f / 5f) + 32f
+
+            // Create progress bar using block elements
+            val progressBarLength = 12
+            val filledBars = (thermalStatus * progressBarLength).toInt()
+            val progressBar = buildString {
+                append("│") // Left border
+                repeat(filledBars) { append("█") }
+                repeat(progressBarLength - filledBars) { append("░") }
+                append("│") // Right border
+                append(" ")
+                append(String.format("%3d%%", (thermalStatus * 100).toInt()))
+            }
+
+            // Color interpolation based on temperature (green at 30°C, red at 45°C)
+            val normalizedTemp = ((temperature - 30f) / 15f).coerceIn(0f, 1f)
+            val red = (normalizedTemp * 255).toInt()
+            val green = ((1f - normalizedTemp) * 255).toInt()
+            val color = android.graphics.Color.rgb(red, green, 0)
+
+            binding.showThermalsText.setTextColor(color)
+            binding.showThermalsText.text = String.format(
+                "%s\n%.1f°C • %.1f°F",
+                progressBar,
+                temperature,
+                fahrenheit
+            )
         }
     }
 
@@ -1080,5 +1093,18 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
     companion object {
         private val perfStatsUpdateHandler = Handler(Looper.myLooper()!!)
         private val thermalStatsUpdateHandler = Handler(Looper.myLooper()!!)
+    }
+
+    private fun getBatteryTemperature(context: Context): Float {
+        try {
+            val batteryIntent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+            // Temperature in tenths of a degree Celsius
+            val temperature = batteryIntent?.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) ?: 0
+            // Convert to degrees Celsius
+            return temperature / 10.0f
+        } catch (e: Exception) {
+            Log.error("[EmulationFragment] Failed to get battery temperature: ${e.message}")
+            return 0.0f
+        }
     }
 }

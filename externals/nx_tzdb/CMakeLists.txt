@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2023 yuzu Emulator Project & 2025 citron Homebrew Project
+# SPDX-FileCopyrightText: 2023 yuzu Emulator Project
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 set(NX_TZDB_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/include")

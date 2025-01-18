@@ -409,7 +409,7 @@ Questo bannerà sia il suo nome utente del forum che il suo indirizzo IP.</trans
     </message>
     <message>
         <location filename="../../src/citron/configuration/shared_translation.cpp" line="37"/>
-        <source>Mii Edit</source>
+        <source>Mii Editor</source>
         <translation type="unfinished"/>
     </message>
     <message>
@@ -6130,7 +6130,7 @@ Configurazione &amp;gt; Web.</translation>
     </message>
     <message>
         <location filename="../../src/citron/main.cpp" line="4451"/>
-        <source>Mii Edit Applet</source>
+        <source>Mii Editor Applet</source>
         <translation>Editor dei Mii</translation>
     </message>
     <message>

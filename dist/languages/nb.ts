@@ -409,7 +409,7 @@ Dette vil bannlyse både deres forum brukernavn og deres IP adresse.</translatio
     </message>
     <message>
         <location filename="../../src/citron/configuration/shared_translation.cpp" line="37"/>
-        <source>Mii Edit</source>
+        <source>Mii Editor</source>
         <translation type="unfinished"/>
     </message>
     <message>
@@ -6120,7 +6120,7 @@ Bruk kun denne funksjonen til å installere oppdateringer og DLC.</translation>
     </message>
     <message>
         <location filename="../../src/citron/main.cpp" line="4451"/>
-        <source>Mii Edit Applet</source>
+        <source>Mii Editor Applet</source>
         <translation type="unfinished"/>
     </message>
     <message>

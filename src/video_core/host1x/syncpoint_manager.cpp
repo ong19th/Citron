@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021 yuzu Emulator Project & 2025 citron Homebrew Project
+// SPDX-FileCopyrightText: 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "common/microprofile.h"

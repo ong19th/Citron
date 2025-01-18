@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2023 yuzu Emulator Project & 2025 citron Homebrew Project
+// SPDX-FileCopyrightText: 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import android.annotation.SuppressLint
@@ -27,20 +27,20 @@ val autoVersion = (((System.currentTimeMillis() / 1000) - 1451606400) / 10).toIn
 android {
     namespace = "org.citron.citron_emu"
 
-    compileSdkVersion = "android-35"
-    ndkVersion = "27.2.12479018" // "28.0.12433566 rc1"// "28.0.12674087 rc2" // "26.1.10909125"
+    compileSdkVersion = "android-34"
+    ndkVersion = "27.2.12479018" // "27.2.12479018" // "28.0.12433566 rc1"// "28.0.12674087 rc2" // "26.1.10909125"
 
     buildFeatures {
         viewBinding = true
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = "21"
+        jvmTarget = "17"
     }
 
     packaging {
@@ -56,7 +56,7 @@ android {
         // TODO If this is ever modified, change application_id in strings.xml
         applicationId = "org.citron.citron_emu"
         minSdk = 30
-        targetSdk = 35
+        targetSdk = 34
         versionName = getGitVersion()
 
         versionCode = if (System.getenv("AUTO_VERSIONED") == "true") {
@@ -238,6 +238,7 @@ dependencies {
     implementation("io.coil-kt:coil:2.2.2")
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.window:window:1.2.0-beta03")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation("androidx.navigation:navigation-fragment-ktx:2.7.4")
     implementation("androidx.navigation:navigation-ui-ktx:2.7.4")

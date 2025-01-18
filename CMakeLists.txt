@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Citron Homebrew Emulator Project & vampiric_x 2025
+# SPDX-FileCopyrightText: 2025 Citron Homebrew Emulator Project
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 cmake_minimum_required(VERSION 3.22)
@@ -97,7 +97,26 @@ if (ANDROID OR WIN32 OR APPLE)
 endif()
 option(ENABLE_OPENSSL "Enable OpenSSL backend for ISslConnection" ${DEFAULT_ENABLE_OPENSSL})
 
-# Copy the VVL arm64 binary to src/android/app/main/jniLibs. REF: https://github.com/KhronosGroup/Vulkan-ValidationLayers/actions/workflows/vvl.yml
+if (ANDROID AND CITRON_DOWNLOAD_ANDROID_VVL)
+    set(vvl_version "sdk-1.3.261.1")
+    set(vvl_zip_file "${CMAKE_BINARY_DIR}/externals/vvl-android.zip")
+    if (NOT EXISTS "${vvl_zip_file}")
+        # Download and extract validation layer release to externals directory
+        set(vvl_base_url "https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases/download")
+        file(DOWNLOAD "${vvl_base_url}/${vvl_version}/android-binaries-${vvl_version}-android.zip"
+            "${vvl_zip_file}" SHOW_PROGRESS)
+        execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${vvl_zip_file}"
+                        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externals")
+    endif()
+
+    # Copy the arm64 binary to src/android/app/main/jniLibs only if it doesn't exist
+    set(vvl_lib_path "${CMAKE_CURRENT_SOURCE_DIR}/src/android/app/src/main/jniLibs/arm64-v8a/")
+    set(vvl_lib_file "${vvl_lib_path}/libVkLayer_khronos_validation.so")
+    if (NOT EXISTS "${vvl_lib_file}")
+        file(COPY "${CMAKE_BINARY_DIR}/externals/android-binaries-${vvl_version}/arm64-v8a/libVkLayer_khronos_validation.so"
+                DESTINATION "${vvl_lib_path}")
+    endif()
+endif()
 
 if (ANDROID)
     set(CMAKE_SKIP_INSTALL_RULES ON)
@@ -291,24 +310,24 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 # =======================================================================
 
 # Enforce the search mode of non-required packages for better and shorter failure messages
-find_package(Boost 1.79.0 REQUIRED context)
-find_package(enet 1.3 MODULE)
+find_package(Boost REQUIRED context)
+find_package(enet MODULE)
 find_package(fmt 9 REQUIRED)
 if (CITRON_USE_LLVM_DEMANGLE)
-    find_package(LLVM 17.0.2 MODULE COMPONENTS Demangle)
+    find_package(LLVM MODULE COMPONENTS Demangle)
 endif()
 find_package(lz4 REQUIRED)
-find_package(nlohmann_json 3.8 REQUIRED)
-find_package(Opus 1.3 MODULE)
+find_package(nlohmann_json REQUIRED)
+find_package(Opus MODULE)
 find_package(RenderDoc MODULE)
 find_package(SimpleIni MODULE)
 find_package(stb MODULE)
 find_package(VulkanMemoryAllocator CONFIG)
-find_package(ZLIB 1.2 REQUIRED)
-find_package(zstd 1.5 REQUIRED)
+find_package(ZLIB REQUIRED)
+find_package(zstd REQUIRED)
 
 if (NOT CITRON_USE_EXTERNAL_VULKAN_HEADERS)
-    find_package(VulkanHeaders 1.3.274 REQUIRED)
+    find_package(VulkanHeaders 1.4.304 REQUIRED)
 endif()
 
 if (NOT CITRON_USE_EXTERNAL_VULKAN_UTILITY_LIBRARIES)
@@ -403,7 +422,7 @@ if (ENABLE_QT)
         download_qt(6.7.3)
     endif()
 
-    find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia Concurrent)
+    find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia Concurrent Network)
 
     if (UNIX AND NOT APPLE)
         find_package(Qt6 REQUIRED COMPONENTS DBus)
@@ -653,30 +672,4 @@ if(ENABLE_QT AND UNIX AND NOT APPLE)
             DESTINATION "share/mime/packages")
     install(FILES "dist/org.citron_emu.citron.metainfo.xml"
             DESTINATION "share/metainfo")
-endif()
-
-# Set default x86-64-v2 instruction set for better compatibility
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64|AMD64")
-    # Ensure quotes are preserved and flags are set for both main build and vcpkg
-    set(ISA_FLAGS "-march=x86-64-v2")
-
-    # Set for main project
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ISA_FLAGS}")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ISA_FLAGS}")
-
-    # Set for vcpkg dependencies
-    set(VCPKG_CXX_FLAGS "${ISA_FLAGS}")
-    set(VCPKG_C_FLAGS "${ISA_FLAGS}")
-
-    # Set toolchain options for vcpkg
-    set(VCPKG_CHAINLOAD_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/x86-64-v2-toolchain.cmake")
-
-    # Ensure we're not getting overridden by system defaults
-    add_compile_options(${ISA_FLAGS})
-
-    # Force disable higher ISA levels
-    add_compile_definitions(
-        __x86_64_v3__=0
-        __x86_64_v4__=0
-    )
 endif()

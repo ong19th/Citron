@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project & 2025 citron Homebrew Project
+// SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #pragma once
@@ -30,6 +30,8 @@ public:
     ~IHidServer() override;
 
     std::shared_ptr<ResourceManager> GetResourceManager();
+
+    Result SetGestureOutputRanges(u32, u32, u32, u32);
 
 private:
     Result CreateAppletResource(OutInterface<IAppletResource> out_applet_resource,

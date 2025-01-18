@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project & 2025 citron Homebrew Project
+// SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/bit_cast.h"
@@ -264,10 +264,20 @@ static U1 GetFlowTest(IREmitter& ir, FlowTest flow_test) {
         LOG_WARNING(Shader, "(STUBBED) FCSM_TR");
         return ir.Imm1(false);
     case FlowTest::CSM_TA:
+        LOG_WARNING(Shader, "(STUBBED) CSM_TA");
+        return ir.Imm1(false);
     case FlowTest::CSM_TR:
+        LOG_WARNING(Shader, "(STUBBED) CSM_TR");
+        return ir.Imm1(false);
     case FlowTest::CSM_MX:
+        LOG_WARNING(Shader, "(STUBBED) CSM_MX");
+        return ir.Imm1(false);
     case FlowTest::FCSM_TA:
+        LOG_WARNING(Shader, "(STUBBED) FCSM_TA");
+        return ir.Imm1(false);
     case FlowTest::FCSM_MX:
+        LOG_WARNING(Shader, "(STUBBED) FCSM_MX");
+        return ir.Imm1(false);
     default:
         throw NotImplementedException("Flow test {}", flow_test);
     }
