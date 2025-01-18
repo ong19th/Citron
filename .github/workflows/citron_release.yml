@@ -54,6 +54,8 @@ jobs:
           filename: 'Citron_winOS-x64.zip'
           directory: '${{ github.workspace }}/build'
           path: '${{ github.workspace }}/build/bin/Release'
+          exclusions: 'tests.exe'
+          recursive_exclusions: tests.exe
 
       - name: Release
         uses: ncipollo/release-action@v1.14.0
