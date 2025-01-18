@@ -435,6 +435,10 @@ if (CITRON_USE_QT_WEB_ENGINE)
     target_compile_definitions(citron PRIVATE -DCITRON_USE_QT_WEB_ENGINE)
 endif ()
 
+target_link_libraries(citron PRIVATE PRIVATE
+    Qt::Network
+)
+
 if(UNIX AND NOT APPLE)
     install(TARGETS citron)
 endif()
