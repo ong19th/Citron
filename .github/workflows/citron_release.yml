@@ -1,4 +1,4 @@
-name: Build
+name: Build Windows Release
 on:
   workflow_dispatch:
     inputs: {}
