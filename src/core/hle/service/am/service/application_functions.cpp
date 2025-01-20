@@ -181,13 +181,16 @@ Result IApplicationFunctions::GetDesiredLanguage(Out<u64> out_language_code) {
 }
 
 Result IApplicationFunctions::SetTerminateResult(Result terminate_result) {
-    LOG_INFO(Service_AM, "(STUBBED) called, result={:#x} ({:04}-{:04})",
+    LOG_INFO(Service_AM, "called, result={:#x} ({:04}-{:04})",
              terminate_result.GetInnerValue(),
              static_cast<u32>(terminate_result.GetModule()) + 2000,
              terminate_result.GetDescription());
 
-    std::scoped_lock lk{m_applet->lock};
-    m_applet->terminate_result = terminate_result;
+    // Only set the terminate result if it's not a panic
+    if (!terminate_result.IsError()) {
+        std::scoped_lock lk{m_applet->lock};
+        m_applet->terminate_result = terminate_result;
+    }
 
     R_SUCCEED();
 }
