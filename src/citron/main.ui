@@ -45,7 +45,7 @@
      <x>0</x>
      <y>0</y>
      <width>1280</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -188,12 +188,20 @@
     <addaction name="separator"/>
     <addaction name="action_About"/>
    </widget>
+   <widget class="QMenu" name="menu_Save_States">
+    <property name="title">
+     <string>&amp;Save States</string>
+    </property>
+    <addaction name="actionSave"/>
+    <addaction name="actionLoad"/>
+   </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_Emulation"/>
    <addaction name="menu_View"/>
    <addaction name="menu_Tools"/>
    <addaction name="menu_Multiplayer"/>
    <addaction name="menu_Help"/>
+   <addaction name="menu_Save_States"/>
   </widget>
   <action name="action_Install_File_NAND">
    <property name="enabled">
@@ -473,6 +481,16 @@
   <action name="action_Install_Keys">
    <property name="text">
     <string>Install Decryption Keys</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="text">
+    <string>&amp;Save</string>
+   </property>
+  </action>
+  <action name="actionLoad">
+   <property name="text">
+    <string>&amp;Load</string>
    </property>
   </action>
  </widget>
