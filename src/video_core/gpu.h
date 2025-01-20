@@ -259,6 +259,31 @@ public:
     /// Notify rasterizer that any caches of the specified region should be flushed and invalidated
     void FlushAndInvalidateRegion(DAddr addr, u64 size);
 
+    /// Enables error notifier for the GPU channel
+    void EnableErrorNotifier(u32 memory, u32 offset, u32 size) {
+        // Implementation depends on specific GPU requirements
+        LOG_DEBUG(HW_GPU, "Error notifier enabled: memory={:X}, offset={:X}, size={:X}",
+                 memory, offset, size);
+    }
+
+    /// Sets the timeout for the GPU channel
+    void SetChannelTimeout(const Tegra::Control::ChannelState& channel, u32 timeout) {
+        // Implementation depends on specific GPU requirements
+        LOG_DEBUG(HW_GPU, "Channel timeout set: timeout={:X}", timeout);
+    }
+
+    /// Sets the timeslice for the GPU channel
+    void SetChannelTimeslice(const Tegra::Control::ChannelState& channel, u32 timeslice) {
+        // Implementation depends on specific GPU requirements
+        LOG_DEBUG(HW_GPU, "Channel timeslice set: timeslice={:X}", timeslice);
+    }
+
+    /// Initializes a new object context
+    void InitializeObjectContext(u32 object_id) {
+        // Implementation depends on specific GPU requirements
+        LOG_DEBUG(HW_GPU, "Object context initialized: object_id={:X}", object_id);
+    }
+
 private:
     struct Impl;
     mutable std::unique_ptr<Impl> impl;

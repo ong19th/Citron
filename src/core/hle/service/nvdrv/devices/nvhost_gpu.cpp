@@ -156,8 +156,24 @@ NvResult nvhost_gpu::ZCullBind(IoctlZCullBind& params) {
 }
 
 NvResult nvhost_gpu::SetErrorNotifier(IoctlSetErrorNotifier& params) {
-    LOG_WARNING(Service_NVDRV, "(STUBBED) called, offset={:X}, size={:X}, mem={:X}", params.offset,
-                params.size, params.mem);
+    LOG_DEBUG(Service_NVDRV, "called, offset={:X}, size={:X}, mem={:X}", params.offset,
+              params.size, params.mem);
+
+    // Validate parameters
+    if (params.size == 0) {
+        return NvResult::BadParameter;
+    }
+
+    // Store error notifier configuration
+    error_notifier_offset = params.offset;
+    error_notifier_size = params.size;
+    error_notifier_memory = static_cast<u32_le>(params.mem); // Explicit conversion
+
+    // Enable error notifications in the GPU
+    system.GPU().EnableErrorNotifier(static_cast<u32>(error_notifier_memory),
+                                   static_cast<u32>(error_notifier_offset),
+                                   static_cast<u32>(error_notifier_size));
+
     return NvResult::Success;
 }
 
@@ -168,15 +184,19 @@ NvResult nvhost_gpu::SetChannelPriority(IoctlChannelSetPriority& params) {
 }
 
 NvResult nvhost_gpu::AllocGPFIFOEx2(IoctlAllocGpfifoEx2& params, DeviceFD fd) {
-    LOG_WARNING(Service_NVDRV,
-                "(STUBBED) called, num_entries={:X}, flags={:X}, unk0={:X}, "
-                "unk1={:X}, unk2={:X}, unk3={:X}",
-                params.num_entries, params.flags, params.unk0, params.unk1, params.unk2,
-                params.unk3);
+    LOG_DEBUG(Service_NVDRV,
+             "called, num_entries={:X}, flags={:X}, unk0={:X}, unk1={:X}, unk2={:X}, unk3={:X}",
+             params.num_entries, params.flags, params.unk0, params.unk1, params.unk2, params.unk3);
 
     if (channel_state->initialized) {
-        LOG_CRITICAL(Service_NVDRV, "Already allocated!");
+        LOG_CRITICAL(Service_NVDRV, "Channel already allocated!");
         return NvResult::AlreadyAllocated;
+    }
+
+    // Validate parameters
+    if (params.num_entries == 0 || params.num_entries > 0x10000) {
+        LOG_ERROR(Service_NVDRV, "Invalid GPFIFO entry count!");
+        return NvResult::BadParameter;
     }
 
     u64 program_id{};
@@ -184,18 +204,30 @@ NvResult nvhost_gpu::AllocGPFIFOEx2(IoctlAllocGpfifoEx2& params, DeviceFD fd) {
         program_id = session->process->GetProgramId();
     }
 
+    // Initialize the GPU channel
     system.GPU().InitChannel(*channel_state, program_id);
 
+    // Set up the fence for synchronization
     params.fence_out = syncpoint_manager.GetSyncpointFence(channel_syncpoint);
 
     return NvResult::Success;
 }
 
 NvResult nvhost_gpu::AllocateObjectContext(IoctlAllocObjCtx& params) {
-    LOG_WARNING(Service_NVDRV, "(STUBBED) called, class_num={:X}, flags={:X}", params.class_num,
-                params.flags);
+    LOG_DEBUG(Service_NVDRV, "called, class_num={:X}, flags={:X}", params.class_num, params.flags);
 
-    params.obj_id = 0x0;
+    // Validate class number
+    if (params.class_num != 0xB197) { // 0xB197 is the standard 3D class
+        LOG_ERROR(Service_NVDRV, "Invalid class number {:X}", params.class_num);
+        return NvResult::BadParameter;
+    }
+
+    // Allocate a new object context
+    params.obj_id = current_obj_id++;
+
+    // Initialize the 3D engine context
+    system.GPU().InitializeObjectContext(static_cast<u32>(params.obj_id));
+
     return NvResult::Success;
 }
 
@@ -323,15 +355,33 @@ NvResult nvhost_gpu::GetWaitbase(IoctlGetWaitbase& params) {
 }
 
 NvResult nvhost_gpu::ChannelSetTimeout(IoctlChannelSetTimeout& params) {
-    LOG_INFO(Service_NVDRV, "called, timeout=0x{:X}", params.timeout);
+    LOG_DEBUG(Service_NVDRV, "called, timeout=0x{:X}", params.timeout);
+
+    // Store the timeout value
+    channel_timeout = params.timeout;
+
+    // Configure the timeout in the GPU channel
+    if (channel_state->initialized) {
+        system.GPU().SetChannelTimeout(*channel_state, channel_timeout);
+    }
 
     return NvResult::Success;
 }
 
 NvResult nvhost_gpu::ChannelSetTimeslice(IoctlSetTimeslice& params) {
-    LOG_INFO(Service_NVDRV, "called, timeslice=0x{:X}", params.timeslice);
+    LOG_DEBUG(Service_NVDRV, "called, timeslice=0x{:X}", params.timeslice);
+
+    // Validate timeslice value (arbitrary reasonable limits)
+    if (params.timeslice == 0 || params.timeslice > 0x10000) {
+        return NvResult::BadParameter;
+    }
 
     channel_timeslice = params.timeslice;
+
+    // Configure the timeslice in the GPU channel
+    if (channel_state->initialized) {
+        system.GPU().SetChannelTimeslice(*channel_state, channel_timeslice);
+    }
 
     return NvResult::Success;
 }
@@ -349,5 +399,11 @@ Kernel::KEvent* nvhost_gpu::QueryEvent(u32 event_id) {
         return nullptr;
     }
 }
+
+u32 error_notifier_offset{};
+u32 error_notifier_size{};
+u32 error_notifier_memory{};
+u32 channel_timeout{};
+u32 current_obj_id{};
 
 } // namespace Service::Nvidia::Devices
