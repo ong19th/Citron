@@ -159,17 +159,11 @@ NvResult nvhost_gpu::SetErrorNotifier(IoctlSetErrorNotifier& params) {
     LOG_DEBUG(Service_NVDRV, "called, offset={:X}, size={:X}, mem={:X}", params.offset,
               params.size, params.mem);
 
-    // Validate parameters
-    if (params.size == 0) {
-        return NvResult::BadParameter;
-    }
-
-    // Store error notifier configuration
     error_notifier_offset = params.offset;
     error_notifier_size = params.size;
-    error_notifier_memory = static_cast<u32_le>(params.mem); // Explicit conversion
+    error_notifier_memory = static_cast<u32_le>(params.mem);
 
-    // Enable error notifications in the GPU
+    // Always enable error notifier in GPU
     system.GPU().EnableErrorNotifier(static_cast<u32>(error_notifier_memory),
                                    static_cast<u32>(error_notifier_offset),
                                    static_cast<u32>(error_notifier_size));
@@ -193,9 +187,9 @@ NvResult nvhost_gpu::AllocGPFIFOEx2(IoctlAllocGpfifoEx2& params, DeviceFD fd) {
         return NvResult::AlreadyAllocated;
     }
 
-    // Validate parameters
-    if (params.num_entries == 0 || params.num_entries > 0x10000) {
-        LOG_ERROR(Service_NVDRV, "Invalid GPFIFO entry count!");
+    // Relax validation to allow any non-zero value
+    if (params.num_entries == 0) {
+        LOG_WARNING(Service_NVDRV, "Zero GPFIFO entries requested");
         return NvResult::BadParameter;
     }
 

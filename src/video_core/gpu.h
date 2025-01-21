@@ -261,9 +261,14 @@ public:
 
     /// Enables error notifier for the GPU channel
     void EnableErrorNotifier(u32 memory, u32 offset, u32 size) {
-        // Implementation depends on specific GPU requirements
         LOG_DEBUG(HW_GPU, "Error notifier enabled: memory={:X}, offset={:X}, size={:X}",
                  memory, offset, size);
+
+        // For now, just store the values and return
+        // TODO: Implement proper error notification handling
+        error_notifier_memory = memory;
+        error_notifier_offset = offset;
+        error_notifier_size = size;
     }
 
     /// Sets the timeout for the GPU channel
@@ -287,6 +292,11 @@ public:
 private:
     struct Impl;
     mutable std::unique_ptr<Impl> impl;
+
+    // Add these member variables to store error notifier state
+    u32 error_notifier_memory{};
+    u32 error_notifier_offset{};
+    u32 error_notifier_size{};
 };
 
 } // namespace Tegra
