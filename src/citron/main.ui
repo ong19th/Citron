@@ -17,12 +17,6 @@
    <iconset resource="citron.qrc">
     <normaloff>:/img/citron.ico</normaloff>:/img/citron.ico</iconset>
   </property>
-  <property name="tabShape">
-   <enum>QTabWidget::Rounded</enum>
-  </property>
-  <property name="dockNestingEnabled">
-   <bool>true</bool>
-  </property>
   <property name="styleSheet">
    <string notr="true">QMainWindow {
     background-color: #2D2D2D;
@@ -108,6 +102,12 @@ QToolButton:pressed {
     background-color: #505050;
 }</string>
   </property>
+  <property name="tabShape">
+   <enum>QTabWidget::Rounded</enum>
+  </property>
+  <property name="dockNestingEnabled">
+   <bool>true</bool>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
     <property name="leftMargin">
@@ -130,7 +130,7 @@ QToolButton:pressed {
      <x>0</x>
      <y>0</y>
      <width>1280</width>
-     <height>22</height>
+     <height>29</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -267,18 +267,7 @@ QToolButton:pressed {
      <string>&amp;Help</string>
     </property>
     <addaction name="action_Report_Compatibility"/>
-    <addaction name="action_Open_Mods_Page"/>
-    <addaction name="action_Open_Quickstart_Guide"/>
-    <addaction name="action_Open_FAQ"/>
-    <addaction name="separator"/>
     <addaction name="action_About"/>
-   </widget>
-   <widget class="QMenu" name="menu_Save_States">
-    <property name="title">
-     <string>&amp;Save States</string>
-    </property>
-    <addaction name="actionSave"/>
-    <addaction name="actionLoad"/>
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_Emulation"/>
@@ -286,7 +275,6 @@ QToolButton:pressed {
    <addaction name="menu_Tools"/>
    <addaction name="menu_Multiplayer"/>
    <addaction name="menu_Help"/>
-   <addaction name="menu_Save_States"/>
   </widget>
   <action name="action_Install_File_NAND">
    <property name="enabled">
