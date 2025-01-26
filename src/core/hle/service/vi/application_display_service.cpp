@@ -14,9 +14,11 @@
 namespace Service::VI {
 
 IApplicationDisplayService::IApplicationDisplayService(Core::System& system_,
-                                                       std::shared_ptr<Container> container)
+                                                       std::shared_ptr<Container> container,
+                                                       SessionType type)
     : ServiceFramework{system_, "IApplicationDisplayService"},
-      m_container{std::move(container)}, m_context{system, "IApplicationDisplayService"} {
+      m_container{std::move(container)}, m_context{system, "IApplicationDisplayService"},
+      m_session_type{type} {
     // clang-format off
     static const FunctionInfo functions[] = {
         {100, C<&IApplicationDisplayService::GetRelayService>, "GetRelayService"},
@@ -36,10 +38,10 @@ IApplicationDisplayService::IApplicationDisplayService(Core::System& system_,
         {2101, C<&IApplicationDisplayService::SetLayerScalingMode>, "SetLayerScalingMode"},
         {2102, C<&IApplicationDisplayService::ConvertScalingMode>, "ConvertScalingMode"},
         {2450, C<&IApplicationDisplayService::GetIndirectLayerImageMap>, "GetIndirectLayerImageMap"},
-        {2451, nullptr, "GetIndirectLayerImageCropMap"},
+        {2451, C<&IApplicationDisplayService::GetIndirectLayerImageCropMap>, "GetIndirectLayerImageCropMap"},
         {2460, C<&IApplicationDisplayService::GetIndirectLayerImageRequiredMemoryInfo>, "GetIndirectLayerImageRequiredMemoryInfo"},
         {5202, C<&IApplicationDisplayService::GetDisplayVsyncEvent>, "GetDisplayVsyncEvent"},
-        {5203, nullptr, "GetDisplayVsyncEventForDebug"},
+        {5203, C<&IApplicationDisplayService::GetDisplayVsyncEventForDebug>, "GetDisplayVsyncEventForDebug"},
     };
     // clang-format on
 
@@ -60,13 +62,19 @@ IApplicationDisplayService::~IApplicationDisplayService() {
 
 Result IApplicationDisplayService::GetRelayService(
     Out<SharedPointer<Nvnflinger::IHOSBinderDriver>> out_relay_service) {
-    LOG_WARNING(Service_VI, "(STUBBED) called");
+    LOG_DEBUG(Service_VI, "called");
     R_RETURN(m_container->GetBinderDriver(out_relay_service));
 }
 
 Result IApplicationDisplayService::GetSystemDisplayService(
     Out<SharedPointer<ISystemDisplayService>> out_system_display_service) {
-    LOG_WARNING(Service_VI, "(STUBBED) called");
+    LOG_DEBUG(Service_VI, "called");
+
+    // vi:u is not allowed to use this command
+    if (m_session_type == SessionType::User) {
+        R_THROW(ResultPermissionDenied);
+    }
+
     *out_system_display_service = std::make_shared<ISystemDisplayService>(system, m_container);
     R_SUCCEED();
 }
@@ -74,6 +82,12 @@ Result IApplicationDisplayService::GetSystemDisplayService(
 Result IApplicationDisplayService::GetManagerDisplayService(
     Out<SharedPointer<IManagerDisplayService>> out_manager_display_service) {
     LOG_DEBUG(Service_VI, "called");
+
+    // Only vi:m is allowed to use this command
+    if (m_session_type != SessionType::Manager) {
+        R_THROW(ResultPermissionDenied);
+    }
+
     *out_manager_display_service = std::make_shared<IManagerDisplayService>(system, m_container);
     R_SUCCEED();
 }
@@ -161,6 +175,12 @@ Result IApplicationDisplayService::OpenLayer(Out<u64> out_size,
     display_name[display_name.size() - 1] = '\0';
 
     LOG_DEBUG(Service_VI, "called. layer_id={}, aruid={:#x}", layer_id, aruid.pid);
+
+    // Check if AppletResourceUserId is valid
+    if (aruid.pid == 0) {
+        LOG_ERROR(Service_VI, "Invalid AppletResourceUserId");
+        R_THROW(ResultOperationFailed);
+    }
 
     u64 display_id;
     R_TRY(m_container->OpenDisplay(&display_id, display_name));
@@ -295,6 +315,37 @@ Result IApplicationDisplayService::GetIndirectLayerImageRequiredMemoryInfo(Out<s
 
     *out_alignment = 0x1000;
     *out_size = (texture_size + base_size - 1) / base_size * base_size;
+
+    R_SUCCEED();
+}
+
+Result IApplicationDisplayService::GetIndirectLayerImageCropMap(
+    Out<u64> out_size,
+    Out<u64> out_stride,
+    OutBuffer<BufferAttr_HipcMapTransferAllowsNonSecure | BufferAttr_HipcMapAlias> out_buffer,
+    float x1, float y1, float x2, float y2,
+    u64 indirect_layer_consumer_handle,
+    ClientAppletResourceUserId aruid) {
+    LOG_WARNING(Service_VI,
+                "(STUBBED) called, crop_params={{{}, {}, {}, {}}}, indirect_layer_consumer_handle={}, "
+                "aruid={:#x}",
+                x1, y1, x2, y2, indirect_layer_consumer_handle, aruid.pid);
+    *out_size = 0;
+    *out_stride = 0;
+    R_SUCCEED();
+}
+
+Result IApplicationDisplayService::GetDisplayVsyncEventForDebug(
+    OutCopyHandle<Kernel::KReadableEvent> out_vsync_event, u64 display_id) {
+    LOG_DEBUG(Service_VI, "called. display_id={}", display_id);
+
+    std::scoped_lock lk{m_lock};
+
+    auto [it, created] = m_display_vsync_events.emplace(display_id, m_context);
+    R_UNLESS(created, VI::ResultPermissionDenied);
+
+    m_container->LinkVsyncEvent(display_id, &it->second);
+    *out_vsync_event = it->second.GetHandle();
 
     R_SUCCEED();
 }
