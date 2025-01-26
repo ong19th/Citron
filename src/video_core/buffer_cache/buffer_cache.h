@@ -1696,87 +1696,44 @@ void BufferCache<P>::DeleteBuffer(BufferId buffer_id, bool do_not_mark) {
 template <class P>
 Binding BufferCache<P>::StorageBufferBinding(GPUVAddr ssbo_addr, u32 cbuf_index,
                                              bool is_written) const {
-    // Read the GPU address from the storage buffer
-    GPUVAddr gpu_addr;
-    gpu_memory->ReadBlock(ssbo_addr, &gpu_addr, sizeof(GPUVAddr));
-
-    if (gpu_addr == 0) {
-        LOG_WARNING(HW_GPU, "Null GPU address read from storage buffer at {:x} for cbuf index {}",
-                   ssbo_addr, cbuf_index);
-        return NULL_BINDING;
-    }
-
+    const GPUVAddr gpu_addr = gpu_memory->Read<u64>(ssbo_addr);
     const auto size = [&]() {
         const bool is_nvn_cbuf = cbuf_index == 0;
+        // The NVN driver buffer (index 0) is known to pack the SSBO address followed by its size.
         if (is_nvn_cbuf) {
-            // Try to read the size for NVN buffers
-            u32 nvn_size;
-            gpu_memory->ReadBlock(ssbo_addr + 8, &nvn_size, sizeof(u32));
-            if (nvn_size != 0) {
-                return nvn_size;
+            const u32 ssbo_size = gpu_memory->Read<u32>(ssbo_addr + 8);
+            if (ssbo_size != 0) {
+                return ssbo_size;
             }
         }
-
-        // Determine size by reading memory pages
-        const u64 max_size = 8_MiB;
-        u32 current_size = 0;
-        u8 test_byte;
-
-        for (u64 offset = 0; offset < max_size; offset += Core::DEVICE_PAGESIZE) {
-            gpu_memory->ReadBlock(gpu_addr + offset, &test_byte, sizeof(u8));
-            current_size = static_cast<u32>(offset + Core::DEVICE_PAGESIZE);
-
-            // If we can't read from this page, use the previous size
-            if (test_byte == 0 && offset > 0) {
-                current_size = static_cast<u32>(offset);
-                break;
-            }
-        }
-
-        if (current_size == 0) {
-            LOG_WARNING(HW_GPU, "Zero memory layout size for storage buffer at {:x}", gpu_addr);
-            return 0U;
-        }
-        return std::min(current_size, static_cast<u32>(max_size));
+        // Other titles (notably Doom Eternal) may use STG/LDG on buffer addresses in custom defined
+        // cbufs, which do not store the sizes adjacent to the addresses, so use the fully
+        // mapped buffer size for now.
+        const u32 memory_layout_size = static_cast<u32>(gpu_memory->GetMemoryLayoutSize(gpu_addr));
+        return std::min(memory_layout_size, static_cast<u32>(8_MiB));
     }();
-
-    // Early return if size is 0
-    if (size == 0) {
-        LOG_WARNING(HW_GPU, "Zero size storage buffer for cbuf index {}", cbuf_index);
-        return NULL_BINDING;
-    }
-
+    // Alignment only applies to the offset of the buffer
     const u32 alignment = runtime.GetStorageBufferAlignment();
     const GPUVAddr aligned_gpu_addr = Common::AlignDown(gpu_addr, alignment);
     const u32 aligned_size = static_cast<u32>(gpu_addr - aligned_gpu_addr) + size;
 
     const std::optional<DAddr> aligned_device_addr = gpu_memory->GpuToCpuAddress(aligned_gpu_addr);
+    if (!aligned_device_addr || size == 0) {
+        LOG_WARNING(HW_GPU, "Failed to find storage buffer for cbuf index {}", cbuf_index);
+        return NULL_BINDING;
+    }
     const std::optional<DAddr> device_addr = gpu_memory->GpuToCpuAddress(gpu_addr);
-
-    if (!aligned_device_addr || !device_addr) {
-        LOG_WARNING(HW_GPU, "Failed to translate GPU address {:x} to CPU address for cbuf index {}",
-                   gpu_addr, cbuf_index);
-        return NULL_BINDING;
-    }
-
-    // Validate device addresses are within bounds
-    constexpr size_t MAX_DEVICE_MEMORY = 1ULL << 32; // 4GB max device memory
-    if (*aligned_device_addr >= MAX_DEVICE_MEMORY ||
-        (*aligned_device_addr + aligned_size) > MAX_DEVICE_MEMORY ||
-        *device_addr >= MAX_DEVICE_MEMORY ||
-        (*device_addr + size) > MAX_DEVICE_MEMORY) {
-        LOG_WARNING(HW_GPU, "Device address out of bounds for storage buffer cbuf index {}",
-                   cbuf_index);
-        return NULL_BINDING;
-    }
-
+    ASSERT_MSG(device_addr, "Unaligned storage buffer address not found for cbuf index {}",
+               cbuf_index);
+    // The end address used for size calculation does not need to be aligned
     const DAddr cpu_end = Common::AlignUp(*device_addr + size, Core::DEVICE_PAGESIZE);
 
-    return Binding{
+    const Binding binding{
         .device_addr = *aligned_device_addr,
         .size = is_written ? aligned_size : static_cast<u32>(cpu_end - *aligned_device_addr),
         .buffer_id = BufferId{},
     };
+    return binding;
 }
 
 template <class P>
