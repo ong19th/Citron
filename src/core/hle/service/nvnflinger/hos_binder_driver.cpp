@@ -5,6 +5,7 @@
 #include "core/hle/service/nvnflinger/binder.h"
 #include "core/hle/service/nvnflinger/hos_binder_driver.h"
 #include "core/hle/service/nvnflinger/hos_binder_driver_server.h"
+#include <atomic>
 
 namespace Service::Nvnflinger {
 
@@ -40,7 +41,21 @@ Result IHOSBinderDriver::TransactParcel(s32 binder_id, u32 transaction_id,
 }
 
 Result IHOSBinderDriver::AdjustRefcount(s32 binder_id, s32 addval, s32 type) {
-    LOG_WARNING(Service_VI, "(STUBBED) called id={}, addval={}, type={}", binder_id, addval, type);
+    LOG_DEBUG(Service_VI, "called id={}, addval={}, type={}", binder_id, addval, type);
+
+    const auto binder = m_server->TryGetBinder(binder_id);
+    R_SUCCEED_IF(binder == nullptr);
+
+    // type 0 = weak reference, type 1 = strong reference
+    if (type == 0) {
+        binder->AdjustWeakRefcount(addval);
+    } else if (type == 1) {
+        binder->AdjustStrongRefcount(addval);
+    } else {
+        LOG_ERROR(Service_VI, "Invalid refcount type {}", type);
+        R_THROW(Kernel::ResultInvalidArgument);
+    }
+
     R_SUCCEED();
 }
 
