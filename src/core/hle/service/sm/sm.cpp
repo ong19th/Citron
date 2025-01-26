@@ -22,7 +22,7 @@ constexpr Result ResultInvalidClient(ErrorModule::SM, 2);
 constexpr Result ResultAlreadyRegistered(ErrorModule::SM, 4);
 constexpr Result ResultInvalidServiceName(ErrorModule::SM, 6);
 constexpr Result ResultNotRegistered(ErrorModule::SM, 7);
-constexpr Result ResultNotAllowed(ErrorModule::SM, 1);
+[[maybe_unused]] constexpr Result ResultNotAllowed(ErrorModule::SM, 1);
 
 ServiceManager::ServiceManager(Kernel::KernelCore& kernel_) : kernel{kernel_} {
     controller_interface = std::make_unique<Controller>(kernel.System());

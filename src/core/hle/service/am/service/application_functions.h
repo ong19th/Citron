@@ -21,6 +21,12 @@ namespace Service::AM {
 struct Applet;
 class IStorage;
 
+struct LaunchRequiredVersion {
+    u32 version;
+    INSERT_PADDING_WORDS(3); // Padding for IPC alignment
+};
+static_assert(sizeof(LaunchRequiredVersion) == 0x10);
+
 class IApplicationFunctions final : public ServiceFramework<IApplicationFunctions> {
 public:
     explicit IApplicationFunctions(Core::System& system_, std::shared_ptr<Applet> applet);
@@ -77,6 +83,13 @@ private:
     Result GetNotificationStorageChannelEvent(OutCopyHandle<Kernel::KReadableEvent> out_event);
     Result GetHealthWarningDisappearedSystemEvent(OutCopyHandle<Kernel::KReadableEvent> out_event);
     Result PrepareForJit();
+    Result EnableApplicationAllThreadDumpOnCrash();
+    Result SetDelayTimeToAbortOnGpuError(u64 delay_time_ns);
+    Result TryPopFromNotificationStorageChannel(Out<bool> out_success,
+                                              OutBuffer<BufferAttr_HipcMapAlias> out_buffer);
+    Result SetHdcpAuthenticationActivated(bool activated);
+    Result GetLaunchRequiredVersion(Out<LaunchRequiredVersion> out_version);
+    Result UpgradeLaunchRequiredVersion(const LaunchRequiredVersion& version);
 
     const std::shared_ptr<Applet> m_applet;
 };
