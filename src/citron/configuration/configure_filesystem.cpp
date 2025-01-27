@@ -29,9 +29,9 @@ ConfigureFilesystem::ConfigureFilesystem(QWidget* parent)
     connect(ui->reset_game_list_cache, &QPushButton::pressed, this,
             &ConfigureFilesystem::ResetMetadata);
 
-    connect(ui->gamecard_inserted, &QCheckBox::stateChanged, this,
+    connect(ui->gamecard_inserted, &QCheckBox::checkStateChanged, this,
             &ConfigureFilesystem::UpdateEnabledControls);
-    connect(ui->gamecard_current_game, &QCheckBox::stateChanged, this,
+    connect(ui->gamecard_current_game, &QCheckBox::checkStateChanged, this,
             &ConfigureFilesystem::UpdateEnabledControls);
 }
 
