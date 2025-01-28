@@ -46,6 +46,7 @@ enum class Errno {
     MSGSIZE,
     INPROGRESS,
     OTHER,
+    NOMEM,
 };
 
 enum class GetAddrInfoError {

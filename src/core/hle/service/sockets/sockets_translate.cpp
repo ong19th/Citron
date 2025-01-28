@@ -37,6 +37,8 @@ Errno Translate(Network::Errno value) {
         return Errno::CONNRESET;
     case Network::Errno::INPROGRESS:
         return Errno::INPROGRESS;
+    case Network::Errno::NOMEM:
+        return Errno::NOMEM;
     default:
         UNIMPLEMENTED_MSG("Unimplemented errno={}", value);
         return Errno::SUCCESS;
