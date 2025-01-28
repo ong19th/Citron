@@ -3580,7 +3580,7 @@ void GMainWindow::OpenURL(const QUrl& url) {
 }
 
 void GMainWindow::OnOpenModsPage() {
-    OpenURL(QUrl(QStringLiteral("https://github.com/citron-emu/citron/wiki/Switch-Mods")));
+    OpenURL(QUrl(QStringLiteral("https://git.citron-emu.org/Citron/Citron/wiki/Switch-Mods")));
 }
 
 void GMainWindow::OnOpenQuickstartGuide() {

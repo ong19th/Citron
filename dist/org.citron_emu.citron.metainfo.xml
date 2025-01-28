@@ -25,13 +25,13 @@ SPDX-License-Identifier: CC0-1.0
     <keyword>emulator</keyword>
   </keywords>
   <url type="homepage">https://citron-emu.org/</url>
-  <url type="bugtracker">https://github.com/citron-emu/citron/issues</url>
+  <url type="bugtracker">https://git.citron-emu.org/Citron/Citron/issues</url>
   <url type="faq">https://citron-emu.org/wiki/faq/</url>
   <url type="help">https://citron-emu.org/wiki/home/</url>
   <url type="donation">https://citron-emu.org/donate/</url>
   <url type="translate">https://www.transifex.com/projects/p/citron</url>
   <url type="contact">https://community.citra-emu.org/</url>
-  <url type="vcs-browser">https://github.com/citron-emu/citron</url>
+  <url type="vcs-browser">https://git.citron-emu.org/Citron/Citron</url>
   <url type="contribute">https://citron-emu.org/wiki/contributing/</url>
   <launchable type="desktop-id">org.citron_emu.citron.desktop</launchable>
   <provides>
