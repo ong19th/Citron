@@ -12,10 +12,19 @@ void ExitProcess(Core::System& system) {
     auto* current_process = GetCurrentProcessPointer(system.Kernel());
 
     LOG_INFO(Kernel_SVC, "Process {} exiting", current_process->GetProcessId());
-    ASSERT_MSG(current_process->GetState() == KProcess::State::Running,
-               "Process has already exited");
 
-    system.Exit();
+    // Check if process is in a valid state for exit
+    if (current_process->GetState() != KProcess::State::Running) {
+        LOG_WARNING(Kernel_SVC, "Process {} already exiting or in invalid state", current_process->GetProcessId());
+        return;
+    }
+
+    // Ensure clean shutdown
+    try {
+        system.Exit();
+    } catch (const std::exception& e) {
+        LOG_ERROR(Kernel_SVC, "Error during process exit: {}", e.what());
+    }
 }
 
 /// Gets the ID of the specified process or a specified thread's owning process.
