@@ -501,4 +501,12 @@ struct TvSettings {
 };
 static_assert(sizeof(TvSettings) == 0x20, "TvSettings is an invalid size");
 
+/// This is nn::settings::system::RebootlessSystemUpdateVersion
+struct RebootlessSystemUpdateVersion {
+    u32 version;
+    char display_version[0x3C]; // Size to make total struct 0x40 bytes
+};
+static_assert(sizeof(RebootlessSystemUpdateVersion) == 0x40,
+              "RebootlessSystemUpdateVersion is an invalid size");
+
 } // namespace Service::Set

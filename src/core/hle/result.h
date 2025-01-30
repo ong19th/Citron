@@ -292,6 +292,23 @@ private:
     u32 description_end;
 };
 
+namespace ResultNs {
+
+    constexpr ResultRange InvalidSystemUpdateData{ErrorModule::NS, 101, 200};
+    constexpr ResultRange RebootlessSystemUpdateNotSupported{ErrorModule::NS, 201, 300};
+    constexpr ResultRange SystemUpdateNotFound{ErrorModule::NS, 301, 400};
+    constexpr ResultRange RebootlessSystemUpdateVersionMismatch{ErrorModule::NS, 401, 500};
+
+    constexpr ResultRange SystemUpdateInProgress{ErrorModule::NS, 501, 600};
+    constexpr ResultRange SystemUpdateInterrupted{ErrorModule::NS, 601, 700};
+    constexpr ResultRange InvalidRebootlessVersion{ErrorModule::NS, 701, 800};
+    constexpr ResultRange ContentVerificationFailed{ErrorModule::NS, 801, 900};
+    constexpr ResultRange UpdateApplicationBlackListed{ErrorModule::NS, 901, 1000};
+    constexpr ResultRange ContentActionTableError{ErrorModule::NS, 1001, 1100};
+    constexpr ResultRange SetupReceiveUpdateFailed{ErrorModule::NS, 1101, 1200};
+
+} // namespace ResultNs
+
 #define R_SUCCEEDED(res) (static_cast<Result>(res).IsSuccess())
 #define R_FAILED(res) (static_cast<Result>(res).IsFailure())
 

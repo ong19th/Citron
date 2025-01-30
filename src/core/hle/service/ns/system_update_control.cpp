@@ -3,6 +3,7 @@
 
 #include "core/hle/service/cmif_serialization.h"
 #include "core/hle/service/ns/system_update_control.h"
+#include "system_update_control.h"
 
 namespace Service::NS {
 
@@ -31,8 +32,9 @@ ISystemUpdateControl::ISystemUpdateControl(Core::System& system_)
         {18, nullptr, "ApplyReceivedUpdate"},
         {19, nullptr, "GetReceivedEulaDataSize"},
         {20, nullptr, "GetReceivedEulaData"},
-        {21, nullptr, "SetupToReceiveSystemUpdate"},
-        {22, nullptr, "RequestCheckLatestUpdateIncludesRebootlessUpdate"},
+        {21, &ISystemUpdateControl::SetupToReceiveSystemUpdate, "SetupToReceiveSystemUpdate"},
+        {22, &ISystemUpdateControl::RequestCheckLatestUpdateIncludesRebootlessUpdate,
+            "RequestCheckLatestUpdateIncludesRebootlessUpdate"},
     };
     // clang-format on
 
@@ -40,5 +42,17 @@ ISystemUpdateControl::ISystemUpdateControl(Core::System& system_)
 }
 
 ISystemUpdateControl::~ISystemUpdateControl() = default;
+
+void ISystemUpdateControl::SetupToReceiveSystemUpdate(HLERequestContext& ctx) {
+    LOG_WARNING(Service_NS, "(STUBBED) called");
+    IPC::ResponseBuilder rb{ctx, 2};
+    rb.Push(ResultNs::SetupReceiveUpdateFailed);
+}
+
+void ISystemUpdateControl::RequestCheckLatestUpdateIncludesRebootlessUpdate(HLERequestContext& ctx) {
+    LOG_WARNING(Service_NS, "(STUBBED) called");
+    IPC::ResponseBuilder rb{ctx, 2};
+    rb.Push(ResultNs::RebootlessSystemUpdateNotSupported);
+}
 
 } // namespace Service::NS
