@@ -171,6 +171,21 @@
 
         </FrameLayout>
 
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/show_ram_text"
+            style="@style/TextAppearance.Material3.BodySmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="left"
+            android:layout_marginTop="24dp"
+            android:clickable="false"
+            android:focusable="false"
+            android:textColor="@android:color/white"
+            android:shadowColor="@android:color/black"
+            android:shadowRadius="3"
+            android:layout_below="@id/show_fps_text"
+            tools:ignore="RtlHardcoded" />
+
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
     <com.google.android.material.navigation.NavigationView
