@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2019 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 citron Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -82,6 +83,8 @@ private:
 
     // Fallback if fastmem is not supported on this platform
     std::unique_ptr<Common::VirtualBuffer<u8>> fallback_buffer;
+
+    size_t size;
 };
 
 } // namespace Common

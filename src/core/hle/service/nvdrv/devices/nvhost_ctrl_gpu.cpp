@@ -270,7 +270,7 @@ NvResult nvhost_ctrl_gpu::GetTpcMasks2(IoctlGetTpcMasks& params) {
     // Validate input parameters
     if (params.mask_buf_size == 0 || params.mask_buf_size > params.tpc_mask_buf.size()) {
         LOG_ERROR(Service_NVDRV, "Invalid mask buffer size {}", params.mask_buf_size);
-        return NvResult::InvalidValue;
+        return NvResult::InvalidState;
     }
 
     // Set up TPC mask values based on GPU configuration

@@ -200,11 +200,20 @@ public:
         UNREACHABLE();
     }
 
+    bool IsValidMapping(size_t offset, size_t size) const {
+        return (offset + size) <= backing_size;
+    }
+
+    bool IsDirectMappingEnabled() const {
+        return direct_mapping_enabled;
+    }
+
     const size_t backing_size; ///< Size of the backing memory in bytes
     const size_t virtual_size; ///< Size of the virtual address placeholder in bytes
 
     u8* backing_base{};
     u8* virtual_base{};
+    bool direct_mapping_enabled{false};
 
 private:
     /// Release all resources in the object
@@ -602,6 +611,14 @@ public:
         virtual_base = nullptr;
     }
 
+    bool IsValidMapping(size_t offset, size_t size) const {
+        return (offset + size) <= backing_size;
+    }
+
+    bool IsDirectMappingEnabled() const {
+        return virtual_base == nullptr;
+    }
+
     const size_t backing_size; ///< Size of the backing memory in bytes
     const size_t virtual_size; ///< Size of the virtual address placeholder in bytes
 
@@ -675,6 +692,14 @@ public:
 
     void EnableDirectMappedAddress() {}
 
+    bool IsValidMapping(size_t offset, size_t size) const {
+        return false;
+    }
+
+    bool IsDirectMappingEnabled() const {
+        return false;
+    }
+
     u8* backing_base{nullptr};
     u8* virtual_base{nullptr};
 };
@@ -696,7 +721,9 @@ HostMemory::HostMemory(size_t backing_size_, size_t virtual_size_)
             // Ensure the virtual base is aligned to the L2 block size.
             virtual_base = reinterpret_cast<u8*>(
                 Common::AlignUp(reinterpret_cast<uintptr_t>(virtual_base), HugePageSize));
-            virtual_base_offset = virtual_base - impl->virtual_base;
+            virtual_base_offset = static_cast<size_t>(
+                reinterpret_cast<uintptr_t>(virtual_base) -
+                reinterpret_cast<uintptr_t>(impl->virtual_base));
         }
 
     } catch (const std::bad_alloc&) {
