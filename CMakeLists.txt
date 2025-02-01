@@ -419,7 +419,7 @@ add_subdirectory(externals)
 
 if (ENABLE_QT)
     if (NOT USE_SYSTEM_QT)
-        download_qt(6.7.3)
+        download_qt(6.8.1)
     endif()
 
     find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia Concurrent Network)
@@ -673,3 +673,5 @@ if(ENABLE_QT AND UNIX AND NOT APPLE)
     install(FILES "dist/org.citron_emu.citron.metainfo.xml"
             DESTINATION "share/metainfo")
 endif()
+
+target_compile_options(discord-rpc PRIVATE -fpermissive)
