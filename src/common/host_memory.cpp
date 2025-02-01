@@ -491,8 +491,18 @@ public:
         // Intersect the range with our address space.
         AdjustMap(&virtual_offset, &length);
 
+        // If length is 0 after adjustment, nothing to map
+        if (length == 0) {
+            return;
+        }
+
         // We are removing a placeholder.
-        free_manager.AllocateBlock(virtual_base + virtual_offset, length);
+        try {
+            free_manager.AllocateBlock(virtual_base + virtual_offset, length);
+        } catch (const std::exception& e) {
+            LOG_ERROR(HW_Memory, "Failed to allocate block: {}", e.what());
+            return;
+        }
 
         // Deduce mapping protection flags.
         int flags = PROT_NONE;
@@ -510,23 +520,48 @@ public:
 
         void* ret = mmap(virtual_base + virtual_offset, length, flags, MAP_SHARED | MAP_FIXED, fd,
                          host_offset);
-        ASSERT_MSG(ret != MAP_FAILED, "mmap failed: {}", strerror(errno));
+        if (ret == MAP_FAILED) {
+            LOG_ERROR(HW_Memory, "mmap failed: {}", strerror(errno));
+            // Try to restore the placeholder
+            try {
+                void* placeholder = mmap(virtual_base + virtual_offset, length, PROT_NONE,
+                                       MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+                if (placeholder != MAP_FAILED) {
+                    free_manager.FreeBlock(virtual_base + virtual_offset, length);
+                }
+            } catch (...) {
+                // Best effort recovery
+            }
+            return;
+        }
     }
 
     void Unmap(size_t virtual_offset, size_t length) {
-        // The method name is wrong. We're still talking about the virtual range.
-        // We don't want to unmap, we want to reserve this memory.
-
         // Intersect the range with our address space.
         AdjustMap(&virtual_offset, &length);
 
-        // Merge with any adjacent placeholder mappings.
-        auto [merged_pointer, merged_size] =
-            free_manager.FreeBlock(virtual_base + virtual_offset, length);
+        // If length is 0 after adjustment, nothing to unmap
+        if (length == 0) {
+            return;
+        }
 
-        void* ret = mmap(merged_pointer, merged_size, PROT_NONE,
-                         MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
-        ASSERT_MSG(ret != MAP_FAILED, "mmap failed: {}", strerror(errno));
+        try {
+            // Merge with any adjacent placeholder mappings.
+            auto [merged_pointer, merged_size] =
+                free_manager.FreeBlock(virtual_base + virtual_offset, length);
+
+            void* ret = mmap(merged_pointer, merged_size, PROT_NONE,
+                            MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+            if (ret == MAP_FAILED) {
+                LOG_ERROR(HW_Memory, "mmap failed during unmap: {}", strerror(errno));
+                // Try to restore the original mapping
+                free_manager.AllocateBlock(virtual_base + virtual_offset, length);
+                return;
+            }
+        } catch (const std::exception& e) {
+            LOG_ERROR(HW_Memory, "Failed to free block: {}", e.what());
+            return;
+        }
     }
 
     void Protect(size_t virtual_offset, size_t length, bool read, bool write, bool execute) {
