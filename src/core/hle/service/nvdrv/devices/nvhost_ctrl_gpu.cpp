@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 citron Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstring>
@@ -45,6 +46,8 @@ NvResult nvhost_ctrl_gpu::Ioctl1(DeviceFD fd, Ioctl command, std::span<const u8>
             return WrapFixed(this, &nvhost_ctrl_gpu::GetActiveSlotMask, input, output);
         case 0x1c:
             return WrapFixed(this, &nvhost_ctrl_gpu::GetGpuTime, input, output);
+        case 0x13:
+            return WrapFixed(this, &nvhost_ctrl_gpu::GetTpcMasks2, input, output);
         default:
             break;
         }
@@ -258,6 +261,24 @@ NvResult nvhost_ctrl_gpu::FlushL2(IoctlFlushL2& params) {
 NvResult nvhost_ctrl_gpu::GetGpuTime(IoctlGetGpuTime& params) {
     LOG_DEBUG(Service_NVDRV, "called");
     params.gpu_time = static_cast<u64_le>(system.CoreTiming().GetGlobalTimeNs().count());
+    return NvResult::Success;
+}
+
+NvResult nvhost_ctrl_gpu::GetTpcMasks2(IoctlGetTpcMasks& params) {
+    LOG_DEBUG(Service_NVDRV, "called, mask_buffer_size={}", params.mask_buf_size);
+
+    // Validate input parameters
+    if (params.mask_buf_size == 0 || params.mask_buf_size > params.tpc_mask_buf.size()) {
+        LOG_ERROR(Service_NVDRV, "Invalid mask buffer size {}", params.mask_buf_size);
+        return NvResult::InvalidValue;
+    }
+
+    // Set up TPC mask values based on GPU configuration
+    // Using conservative values for compatibility
+    params.mask_buf_size = 1;
+    params.tpc_mask_buf[0] = 0x1;  // Enable first TPC only
+
+    LOG_DEBUG(Service_NVDRV, "TPC mask set to 0x{:x}", params.tpc_mask_buf[0]);
     return NvResult::Success;
 }
 

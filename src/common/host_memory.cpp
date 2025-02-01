@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 citron Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifdef _WIN32
@@ -720,10 +721,18 @@ void HostMemory::Map(size_t virtual_offset, size_t host_offset, size_t length,
     ASSERT(length % PageAlignment == 0);
     ASSERT(virtual_offset + length <= virtual_size);
     ASSERT(host_offset + length <= backing_size);
+
     if (length == 0 || !virtual_base || !impl) {
         return;
     }
+
     impl->Map(virtual_offset + virtual_base_offset, host_offset, length, perms);
+
+    // Verify mapping was successful
+    if (!impl->IsValidMapping(virtual_offset + virtual_base_offset, length)) {
+        LOG_CRITICAL(Common_Memory, "Failed to verify memory mapping: virtual_offset={:x}, host_offset={:x}, length={:x}",
+                    virtual_offset, host_offset, length);
+    }
 }
 
 void HostMemory::Unmap(size_t virtual_offset, size_t length, bool separate_heap) {
@@ -756,9 +765,18 @@ void HostMemory::ClearBackingRegion(size_t physical_offset, size_t length, u32 f
 }
 
 void HostMemory::EnableDirectMappedAddress() {
-    if (impl) {
-        impl->EnableDirectMappedAddress();
+    if (!impl) {
+        LOG_ERROR(Common_Memory, "Implementation not initialized");
+        return;
+    }
+
+    impl->EnableDirectMappedAddress();
+
+    // Only update virtual_size if the direct mapping was successful
+    if (impl->IsDirectMappingEnabled()) {
         virtual_size += reinterpret_cast<uintptr_t>(virtual_base);
+    } else {
+        LOG_ERROR(Common_Memory, "Failed to enable direct mapped address");
     }
 }
 

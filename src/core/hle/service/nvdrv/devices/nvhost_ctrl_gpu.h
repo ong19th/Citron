@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 citron Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -33,6 +34,11 @@ public:
     void OnClose(DeviceFD fd) override;
 
     Kernel::KEvent* QueryEvent(u32 event_id) override;
+
+    struct IoctlGetTpcMasks {
+        u32 mask_buf_size{};
+        std::array<u32, 1> tpc_mask_buf{};
+    };
 
 private:
     static constexpr std::size_t MaxZBCTableSize = 16;
@@ -200,6 +206,8 @@ private:
 
     NvResult GetTPCMasks1(IoctlGpuGetTpcMasksArgs& params);
     NvResult GetTPCMasks3(IoctlGpuGetTpcMasksArgs& params, std::span<u32> tpc_mask);
+
+    NvResult GetTpcMasks2(IoctlGetTpcMasks& params);
 
     NvResult GetActiveSlotMask(IoctlActiveSlotMask& params);
     NvResult ZCullGetCtxSize(IoctlZcullGetCtxSize& params);
