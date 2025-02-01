@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2023 yuzu Emulator Project
+// SPDX-FileCopyrightText: 2025 citron Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import android.annotation.SuppressLint
-import kotlin.collections.setOf
 import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
 import com.github.triplet.gradle.androidpublisher.ReleaseStatus
 
@@ -26,21 +26,22 @@ val autoVersion = (((System.currentTimeMillis() / 1000) - 1451606400) / 10).toIn
 @Suppress("UnstableApiUsage")
 android {
     namespace = "org.citron.citron_emu"
+    compileSdk = 35
 
-    compileSdkVersion = "android-34"
-    ndkVersion = "27.2.12479018" // "27.2.12479018" // "28.0.12433566 rc1"// "28.0.12674087 rc2" // "26.1.10909125"
+    ndkVersion = "26.3.11579264"
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = "21"
+        jvmTarget = "17"
     }
 
     packaging {
@@ -56,7 +57,7 @@ android {
         // TODO If this is ever modified, change application_id in strings.xml
         applicationId = "org.citron.citron_emu"
         minSdk = 30
-        targetSdk = 34
+        targetSdk = 35
         versionName = getGitVersion()
 
         versionCode = if (System.getenv("AUTO_VERSIONED") == "true") {
@@ -103,14 +104,12 @@ android {
                 signingConfigs.getByName("default")
             }
 
-            resValue("string", "app_name_suffixed", "citron")
+            resValue("string", "app_name_suffixed", "Citron")
             isDefault = true
-            isShrinkResources = true
             isMinifyEnabled = true
-            isJniDebuggable = false
             isDebuggable = false
             proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
+                getDefaultProguardFile("proguard-android.txt"),
                 "proguard-rules.pro"
             )
         }
@@ -118,12 +117,12 @@ android {
         // builds a release build that doesn't need signing
         // Attaches 'debug' suffix to version and package name, allowing installation alongside the release build.
         register("relWithDebInfo") {
-            resValue("string", "app_name_suffixed", "citron Debug Release")
+            resValue("string", "app_name_suffixed", "Citron Debug Release")
             signingConfig = signingConfigs.getByName("default")
             isMinifyEnabled = true
             isDebuggable = true
             proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
+                getDefaultProguardFile("proguard-android.txt"),
                 "proguard-rules.pro"
             )
             versionNameSuffix = "-relWithDebInfo"
@@ -135,7 +134,7 @@ android {
         // Attaches 'debug' suffix to version and package name, allowing installation alongside the release build.
         debug {
             signingConfig = signingConfigs.getByName("default")
-            resValue("string", "app_name_suffixed", "citron Debug")
+            resValue("string", "app_name_suffixed", "Citron Debug")
             isDebuggable = true
             isJniDebuggable = true
             versionNameSuffix = "-debug"
@@ -148,7 +147,7 @@ android {
         create("mainline") {
             isDefault = true
             dimension = "version"
-            buildConfigField("Boolean", "PREMIUM", "true") // Spoof EA Version
+            buildConfigField("Boolean", "PREMIUM", "true")
         }
 
         create("ea") {
@@ -164,6 +163,7 @@ android {
             path = file("../../../CMakeLists.txt")
         }
     }
+    buildToolsVersion = "35.0.1"
 
     defaultConfig {
         externalNativeBuild {
@@ -177,23 +177,24 @@ android {
                     "-DCITRON_USE_BUNDLED_VCPKG=ON",
                     "-DCITRON_USE_BUNDLED_FFMPEG=ON",
                     "-DCITRON_ENABLE_LTO=ON",
-                    "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+                    "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+                    "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
                 )
 
-                abiFilters("arm64-v8a")
+                abiFilters("arm64-v8a", "x86_64")
             }
         }
     }
 }
 
-tasks.create<Delete>("ktlintReset") { // Deprecated, Still Works.
-    delete(File(buildDir.path + File.separator + "intermediates/ktLint"))
+tasks.create<Delete>("ktlintReset") {
+    delete(File(layout.buildDirectory.toString() + File.separator + "intermediates/ktLint"))
 }
 
 val showFormatHelp = {
     logger.lifecycle(
         "If this check fails, please try running \"gradlew ktlintFormat\" for automatic " +
-            "codestyle fixes"
+                "codestyle fixes"
     )
 }
 tasks.getByPath("ktlintKotlinScriptCheck").doFirst { showFormatHelp.invoke() }
@@ -204,13 +205,6 @@ ktlint {
     version.set("0.47.1")
     android.set(true)
     ignoreFailures.set(false)
-    disabledRules.set( // Deprecated, Still Works.
-        setOf(
-            "no-wildcard-imports",
-            "package-name",
-            "import-ordering"
-        )
-    )
     reporters {
         reporter(ReporterType.CHECKSTYLE)
     }
@@ -226,6 +220,7 @@ play {
 }
 
 dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0")
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.recyclerview:recyclerview:1.3.1")
