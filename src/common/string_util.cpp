@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: 2013 Dolphin Emulator Project
 // SPDX-FileCopyrightText: 2014 Citra Emulator Project
+// SPDX-FileCopyrightText: 2025 Citron Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
@@ -142,18 +143,136 @@ std::string ReplaceAll(std::string result, const std::string& src, const std::st
 }
 
 std::string UTF16ToUTF8(std::u16string_view input) {
-    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
-    return convert.to_bytes(input.data(), input.data() + input.size());
+#ifdef _WIN32
+    return UTF16ToUTF8(std::wstring_view{reinterpret_cast<const wchar_t*>(input.data()), input.size()});
+#else
+    std::string result;
+    result.reserve(input.size() * 3); // UTF-8 can use up to 3 bytes per UTF-16 character
+
+    for (size_t i = 0; i < input.size(); ) {
+        char32_t code_point;
+
+        // Handle surrogate pairs
+        if (i + 1 < input.size() &&
+            (input[i] & 0xFC00) == 0xD800 &&
+            (input[i + 1] & 0xFC00) == 0xDC00) {
+            // Surrogate pair
+            code_point = 0x10000;
+            code_point += (input[i] & 0x3FF) << 10;
+            code_point += (input[i + 1] & 0x3FF);
+            i += 2;
+        } else {
+            code_point = input[i];
+            i++;
+        }
+
+        // Convert to UTF-8
+        if (code_point < 0x80) {
+            result += static_cast<char>(code_point);
+        } else if (code_point < 0x800) {
+            result += static_cast<char>((code_point >> 6) | 0xC0);
+            result += static_cast<char>((code_point & 0x3F) | 0x80);
+        } else if (code_point < 0x10000) {
+            result += static_cast<char>((code_point >> 12) | 0xE0);
+            result += static_cast<char>(((code_point >> 6) & 0x3F) | 0x80);
+            result += static_cast<char>((code_point & 0x3F) | 0x80);
+        } else {
+            result += static_cast<char>((code_point >> 18) | 0xF0);
+            result += static_cast<char>(((code_point >> 12) & 0x3F) | 0x80);
+            result += static_cast<char>(((code_point >> 6) & 0x3F) | 0x80);
+            result += static_cast<char>((code_point & 0x3F) | 0x80);
+        }
+    }
+    return result;
+#endif
 }
 
 std::u16string UTF8ToUTF16(std::string_view input) {
-    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
-    return convert.from_bytes(input.data(), input.data() + input.size());
+#ifdef _WIN32
+    const auto wide = UTF8ToUTF16W(input);
+    return std::u16string{reinterpret_cast<const char16_t*>(wide.data()), wide.size()};
+#else
+    std::u16string result;
+    result.reserve(input.size()); // Reserve at least the same size
+
+    for (size_t i = 0; i < input.size(); ) {
+        char32_t code_point = 0;
+        unsigned char byte = input[i];
+
+        if (byte < 0x80) {
+            code_point = byte;
+            i += 1;
+        } else if ((byte & 0xE0) == 0xC0) {
+            if (i + 1 >= input.size()) break;
+            code_point = ((byte & 0x1F) << 6) | (input[i + 1] & 0x3F);
+            i += 2;
+        } else if ((byte & 0xF0) == 0xE0) {
+            if (i + 2 >= input.size()) break;
+            code_point = ((byte & 0x0F) << 12) |
+                        ((input[i + 1] & 0x3F) << 6) |
+                        (input[i + 2] & 0x3F);
+            i += 3;
+        } else if ((byte & 0xF8) == 0xF0) {
+            if (i + 3 >= input.size()) break;
+            code_point = ((byte & 0x07) << 18) |
+                        ((input[i + 1] & 0x3F) << 12) |
+                        ((input[i + 2] & 0x3F) << 6) |
+                        (input[i + 3] & 0x3F);
+            i += 4;
+        } else {
+            i += 1;
+            continue;
+        }
+
+        if (code_point <= 0xFFFF) {
+            result += static_cast<char16_t>(code_point);
+        } else {
+            // Surrogate pair encoding
+            code_point -= 0x10000;
+            result += static_cast<char16_t>(0xD800 + (code_point >> 10));
+            result += static_cast<char16_t>(0xDC00 + (code_point & 0x3FF));
+        }
+    }
+    return result;
+#endif
 }
 
 std::u32string UTF8ToUTF32(std::string_view input) {
-    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> convert;
-    return convert.from_bytes(input.data(), input.data() + input.size());
+    std::u32string result;
+    result.reserve(input.size()); // Reserve at least the same size
+
+    for (size_t i = 0; i < input.size(); ) {
+        char32_t code_point = 0;
+        unsigned char byte = input[i];
+
+        if (byte < 0x80) {
+            code_point = byte;
+            i += 1;
+        } else if ((byte & 0xE0) == 0xC0) {
+            if (i + 1 >= input.size()) break;
+            code_point = ((byte & 0x1F) << 6) | (input[i + 1] & 0x3F);
+            i += 2;
+        } else if ((byte & 0xF0) == 0xE0) {
+            if (i + 2 >= input.size()) break;
+            code_point = ((byte & 0x0F) << 12) |
+                        ((input[i + 1] & 0x3F) << 6) |
+                        (input[i + 2] & 0x3F);
+            i += 3;
+        } else if ((byte & 0xF8) == 0xF0) {
+            if (i + 3 >= input.size()) break;
+            code_point = ((byte & 0x07) << 18) |
+                        ((input[i + 1] & 0x3F) << 12) |
+                        ((input[i + 2] & 0x3F) << 6) |
+                        (input[i + 3] & 0x3F);
+            i += 4;
+        } else {
+            i += 1;
+            continue;
+        }
+
+        result += code_point;
+    }
+    return result;
 }
 
 #ifdef _WIN32
