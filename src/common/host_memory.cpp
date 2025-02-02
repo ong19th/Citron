@@ -200,8 +200,8 @@ public:
         UNREACHABLE();
     }
 
-    bool IsValidMapping(size_t offset, size_t size) const {
-        return (offset + size) <= backing_size;
+    bool IsValidMapping(size_t offset, size_t length) const {
+        return (offset + length) <= backing_size;
     }
 
     bool IsDirectMappingEnabled() const {
@@ -611,8 +611,8 @@ public:
         virtual_base = nullptr;
     }
 
-    bool IsValidMapping(size_t offset, size_t size) const {
-        return (offset + size) <= backing_size;
+    bool IsValidMapping(size_t offset, size_t length) const {
+        return (offset + length) <= backing_size;
     }
 
     bool IsDirectMappingEnabled() const {
@@ -692,7 +692,7 @@ public:
 
     void EnableDirectMappedAddress() {}
 
-    bool IsValidMapping(size_t offset, size_t size) const {
+    bool IsValidMapping(size_t offset, size_t length) const {
         return false;
     }
 
