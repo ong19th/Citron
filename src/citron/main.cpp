@@ -4786,14 +4786,7 @@ void GMainWindow::OnMouseActivity() {
 
 void GMainWindow::OnCheckFirmwareDecryption() {
     system->GetFileSystemController().CreateFactories(*vfs);
-    if (!ContentManager::AreKeysPresent()) {
-        QMessageBox::warning(
-            this, tr("Derivation Components Missing"),
-            tr("Encryption keys are missing. "
-               "<br>Please follow <a href='https://citron-emu.org/help/quickstart/'>the citron "
-               "quickstart guide</a> to get all your keys, firmware and "
-               "games."));
-    }
+    // Removed warning message
     SetFirmwareVersion();
     UpdateMenuState();
 }
