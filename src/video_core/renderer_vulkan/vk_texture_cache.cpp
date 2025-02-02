@@ -1368,13 +1368,224 @@ void TextureCacheRuntime::CopyImage(Image& dst, Image& src,
     });
 }
 
-void TextureCacheRuntime::CopyImageMSAA(Image& dst, Image& src,
-                                        std::span<const VideoCommon::ImageCopy> copies) {
+void TextureCacheRuntime::CopyImageMSAA(Image& dst, Image& src, std::span<const VideoCommon::ImageCopy> copies) {
     const bool msaa_to_non_msaa = src.info.num_samples > 1 && dst.info.num_samples == 1;
-    if (msaa_copy_pass) {
-        return msaa_copy_pass->CopyImage(dst, src, copies, msaa_to_non_msaa);
+    if (!msaa_to_non_msaa) {
+        return CopyImage(dst, src, copies);
     }
-    UNIMPLEMENTED_MSG("Copying images with different samples is not supported.");
+
+    // Convert PixelFormat to VkFormat using Maxwell format conversion
+    const auto vk_format = MaxwellToVK::SurfaceFormat(device, FormatType::Optimal, false, src.info.format).format;
+
+    // Check if format supports MSAA resolve
+    const auto format_properties = device.GetPhysical().GetFormatProperties(vk_format);
+    if (!(format_properties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)) {
+        LOG_WARNING(Render_Vulkan, "Format does not support MSAA resolve, falling back to compute shader");
+        if (msaa_copy_pass) {
+            return msaa_copy_pass->CopyImage(dst, src, copies, true);
+        }
+        UNIMPLEMENTED_MSG("MSAA resolve not supported for format and no compute fallback available");
+        return;
+    }
+
+    const VkImage dst_image = dst.Handle();
+    const VkImage src_image = src.Handle();
+    const VkImageAspectFlags aspect_mask = dst.AspectMask();
+
+    // Create temporary resolve image with proper memory allocation
+    const VkImageCreateInfo resolve_ci{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .imageType = VK_IMAGE_TYPE_2D,
+        .format = vk_format,
+        .extent = {
+            .width = src.info.size.width,
+            .height = src.info.size.height,
+            .depth = src.info.size.depth,
+        },
+        .mipLevels = 1,
+        .arrayLayers = 1,
+        .samples = VK_SAMPLE_COUNT_1_BIT,
+        .tiling = VK_IMAGE_TILING_OPTIMAL,
+        .usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+    };
+
+    const auto resolve_image = memory_allocator.CreateImage(resolve_ci);
+
+    scheduler.RequestOutsideRenderPassOperationContext();
+    scheduler.Record([src_image, dst_image, resolve_image = *resolve_image,
+                     copies, aspect_mask](vk::CommandBuffer cmdbuf) {
+        for (const auto& copy : copies) {
+            const VkExtent3D extent{
+                .width = static_cast<u32>(copy.extent.width),
+                .height = static_cast<u32>(copy.extent.height),
+                .depth = static_cast<u32>(copy.extent.depth),
+            };
+
+            // First resolve the MSAA source to the temporary image
+            const VkImageResolve resolve_region{
+                .srcSubresource = {
+                    .aspectMask = aspect_mask,
+                    .mipLevel = static_cast<u32>(copy.src_subresource.base_level),
+                    .baseArrayLayer = static_cast<u32>(copy.src_subresource.base_layer),
+                    .layerCount = static_cast<u32>(copy.src_subresource.num_layers),
+                },
+                .srcOffset = {
+                    static_cast<s32>(copy.src_offset.x),
+                    static_cast<s32>(copy.src_offset.y),
+                    static_cast<s32>(copy.src_offset.z),
+                },
+                .dstSubresource = {
+                    .aspectMask = aspect_mask,
+                    .mipLevel = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount = 1,
+                },
+                .dstOffset = {0, 0, 0},
+                .extent = extent,
+            };
+
+            const std::array pre_barriers{
+                VkImageMemoryBarrier{
+                    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                    .srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT,
+                    .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+                    .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
+                    .newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    .image = src_image,
+                    .subresourceRange = {
+                        .aspectMask = aspect_mask,
+                        .baseMipLevel = static_cast<u32>(copy.src_subresource.base_level),
+                        .levelCount = 1,
+                        .baseArrayLayer = static_cast<u32>(copy.src_subresource.base_layer),
+                        .layerCount = static_cast<u32>(copy.src_subresource.num_layers),
+                    },
+                },
+                VkImageMemoryBarrier{
+                    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                    .srcAccessMask = 0,
+                    .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                    .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                    .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    .image = resolve_image,
+                    .subresourceRange = {
+                        .aspectMask = aspect_mask,
+                        .baseMipLevel = 0,
+                        .levelCount = 1,
+                        .baseArrayLayer = 0,
+                        .layerCount = 1,
+                    },
+                },
+            };
+
+            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                                  VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                  0,
+                                  nullptr,
+                                  nullptr,
+                                  pre_barriers);
+
+            // Resolve MSAA image
+            cmdbuf.ResolveImage(src_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                               resolve_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                               resolve_region);
+
+            // Now copy from resolved image to destination
+            const VkImageCopy copy_region{
+                .srcSubresource = {
+                    .aspectMask = aspect_mask,
+                    .mipLevel = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount = 1,
+                },
+                .srcOffset = {0, 0, 0},
+                .dstSubresource = {
+                    .aspectMask = aspect_mask,
+                    .mipLevel = static_cast<u32>(copy.dst_subresource.base_level),
+                    .baseArrayLayer = static_cast<u32>(copy.dst_subresource.base_layer),
+                    .layerCount = static_cast<u32>(copy.dst_subresource.num_layers),
+                },
+                .dstOffset = {
+                    static_cast<s32>(copy.dst_offset.x),
+                    static_cast<s32>(copy.dst_offset.y),
+                    static_cast<s32>(copy.dst_offset.z),
+                },
+                .extent = extent,
+            };
+
+            std::array<VkImageMemoryBarrier, 2> mid_barriers{{
+                {
+                    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                    .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                    .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+                    .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    .newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    .image = resolve_image,
+                    .subresourceRange = {
+                        .aspectMask = aspect_mask,
+                        .baseMipLevel = 0,
+                        .levelCount = 1,
+                        .baseArrayLayer = 0,
+                        .layerCount = 1,
+                    },
+                },
+                {
+                    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                    .srcAccessMask = 0,
+                    .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                    .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
+                    .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    .image = dst_image,
+                    .subresourceRange = {
+                        .aspectMask = aspect_mask,
+                        .baseMipLevel = static_cast<u32>(copy.dst_subresource.base_level),
+                        .levelCount = 1,
+                        .baseArrayLayer = static_cast<u32>(copy.dst_subresource.base_layer),
+                        .layerCount = static_cast<u32>(copy.dst_subresource.num_layers),
+                    },
+                },
+            }};
+
+            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                  VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                  0,
+                                  nullptr,
+                                  nullptr,
+                                  mid_barriers);
+
+            // Copy from resolved image to destination
+            cmdbuf.CopyImage(resolve_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                            dst_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                            vk::Span{&copy_region, 1});
+
+            // Final transition back to general layout
+            const VkImageMemoryBarrier final_barrier{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                .dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT,
+                .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .newLayout = VK_IMAGE_LAYOUT_GENERAL,
+                .image = dst_image,
+                .subresourceRange = {
+                    .aspectMask = aspect_mask,
+                    .baseMipLevel = static_cast<u32>(copy.dst_subresource.base_level),
+                    .levelCount = 1,
+                    .baseArrayLayer = static_cast<u32>(copy.dst_subresource.base_layer),
+                    .layerCount = static_cast<u32>(copy.dst_subresource.num_layers),
+                },
+            };
+
+            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                  VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                                  0,
+                                  vk::Span<VkMemoryBarrier>{},
+                                  vk::Span<VkBufferMemoryBarrier>{},
+                                  vk::Span{&final_barrier, 1});
+        }
+    });
 }
 
 u64 TextureCacheRuntime::GetDeviceLocalMemory() const {
