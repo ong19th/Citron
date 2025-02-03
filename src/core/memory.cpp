@@ -1093,28 +1093,54 @@ void Memory::MarkRegionDebug(Common::ProcessAddress vaddr, u64 size, bool debug)
 }
 
 bool Memory::InvalidateNCE(Common::ProcessAddress vaddr, size_t size) {
+    // Add detailed debug logging
+    LOG_DEBUG(HW_Memory, "JIT requesting NCE invalidation - Address: 0x{:016X}, Size: {} bytes",
+              GetInteger(vaddr), size);
+
+    // First check if the memory region is valid and executable
+    if (!IsValidVirtualAddressRange(vaddr, size)) {
+        LOG_WARNING(HW_Memory, "Skipping InvalidateNCE: Invalid address range - {} bytes @ 0x{:016X}",
+                   size, GetInteger(vaddr));
+        return false;
+    }
+
     [[maybe_unused]] bool mapped = true;
     [[maybe_unused]] bool rasterizer = false;
 
+    // Get pointer and check memory type
     u8* const ptr = impl->GetPointerImpl(
         GetInteger(vaddr),
         [&] {
-            LOG_ERROR(HW_Memory, "Unmapped InvalidateNCE for {} bytes @ {:#x}", size,
-                      GetInteger(vaddr));
+            LOG_WARNING(HW_Memory,
+                "Skipping InvalidateNCE: Unmapped memory region - {} bytes @ 0x{:016X}",
+                size, GetInteger(vaddr));
             mapped = false;
         },
         [&] { rasterizer = true; });
+
+    // Handle rasterizer memory separately
     if (rasterizer) {
+        LOG_DEBUG(HW_Memory, "Invalidating rasterizer memory region - {} bytes @ 0x{:016X}",
+                 size, GetInteger(vaddr));
         impl->InvalidateGPUMemory(ptr, size);
     }
 
 #ifdef __linux__
-    if (!rasterizer && mapped) {
+    // Handle separate heap mapping on Linux
+    if (!rasterizer && mapped && ptr) {
+        LOG_DEBUG(HW_Memory, "Handling separate heap mapping for NCE region");
         impl->buffer->DeferredMapSeparateHeap(GetInteger(vaddr));
     }
 #endif
 
-    return mapped && ptr != nullptr;
+    // Return success only if we have a valid pointer and the region was mapped
+    const bool success = mapped && ptr != nullptr;
+    if (!success) {
+        LOG_WARNING(HW_Memory, "NCE invalidation failed - Address: 0x{:016X}, Size: {} bytes",
+                   GetInteger(vaddr), size);
+    }
+
+    return success;
 }
 
 bool Memory::InvalidateSeparateHeap(void* fault_address) {
