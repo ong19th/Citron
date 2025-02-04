@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 citron Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -22,6 +23,11 @@ struct AudioRendererParameterInternal;
 
 namespace Renderer {
 class Manager;
+
+enum class AudioRendererRevision {
+    Rev12 = 12 << 24,
+    Rev13 = 13 << 24,
+};
 
 /**
  * Audio Renderer, wraps the main audio system and is mainly responsible for handling service calls.
@@ -82,6 +88,14 @@ public:
     Result RequestUpdate(std::span<const u8> input, std::span<u8> performance,
                          std::span<u8> output);
 
+    bool IsCompressorStatisticsSupported() const {
+        return revision >= static_cast<u32>(AudioRendererRevision::Rev13);
+    }
+
+    bool IsSplitterPrevVolumeResetSupported() const {
+        return revision >= static_cast<u32>(AudioRendererRevision::Rev13);
+    }
+
 private:
     /// System core
     Core::System& core;
@@ -93,6 +107,7 @@ private:
     bool system_registered{};
     /// Audio render system, main driver of audio rendering
     System system;
+    u32 revision;
 };
 
 } // namespace Renderer

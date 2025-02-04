@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 citron Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
 #include <array>
+#include <span>
 
 #include "audio_core/common/common.h"
 #include "audio_core/renderer/effect/effect_info_base.h"
@@ -11,6 +13,53 @@
 #include "common/fixed_point.h"
 
 namespace AudioCore::Renderer {
+
+struct CompressorStatistics {
+    float maximum_mean{};
+    float minimum_gain{1.0f};
+    std::array<float, 6> last_samples{}; // 6 channels max
+
+    void Reset(u16 channel_count) {
+        maximum_mean = 0.0f;
+        minimum_gain = 1.0f;
+        std::fill_n(last_samples.begin(), channel_count, 0.0f);
+    }
+};
+
+struct CompressorParameter {
+    u32 channel_count{};
+    float input_gain{};
+    float release_coefficient{};
+    float attack_coefficient{};
+    float ratio{};
+    float threshold{};
+    bool makeup_gain_enabled{};
+    bool statistics_enabled{};
+    bool statistics_reset{};
+
+    bool IsChannelCountValid() const {
+        return channel_count > 0 && channel_count <= 6;
+    }
+};
+
+class CompressorEffect : public EffectInfoBase {
+public:
+    explicit CompressorEffect(std::size_t sample_count_);
+    ~CompressorEffect() override = default;
+
+    void Process(std::span<f32> output_buffer, std::span<const f32> input_buffer);
+
+    bool IsEnabled() const {
+        return effect_enabled;
+    }
+
+private:
+    CompressorParameter parameter;
+    CompressorStatistics statistics;
+    std::size_t sample_count;
+    bool effect_enabled{false};
+    std::span<u8> result_state;
+};
 
 class CompressorInfo : public EffectInfoBase {
 public:
