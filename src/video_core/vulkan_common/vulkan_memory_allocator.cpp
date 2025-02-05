@@ -303,7 +303,12 @@ bool MemoryAllocator::TryAllocMemory(VkMemoryPropertyFlags flags, u32 type_mask,
     vk::DeviceMemory memory = device.GetLogical().TryAllocateMemory({
         .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
         .pNext = nullptr,
-        .allocationSize = size,
+        /* AMD drivers (including Adreno) require 4KB alignment */
+        .allocationSize = (device.GetDriverID() == VK_DRIVER_ID_AMD_PROPRIETARY ||
+                          device.GetDriverID() == VK_DRIVER_ID_AMD_OPEN_SOURCE ||
+                          device.GetDriverID() == VK_DRIVER_ID_QUALCOMM_PROPRIETARY) ?
+                          ((size + 4095) & ~4095) :  /* AMD (AMDVLK, RADV, RadeonSI) & Adreno */
+                          size,                      /* Others (NVIDIA, Intel, Mali, etc) */
         .memoryTypeIndex = type,
     });
     if (!memory) {

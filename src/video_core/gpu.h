@@ -7,6 +7,7 @@
 
 #include "common/bit_field.h"
 #include "common/common_types.h"
+#include "common/logging/log.h"
 #include "core/hle/service/nvdrv/nvdata.h"
 #include "video_core/cdma_pusher.h"
 #include "video_core/framebuffer_config.h"
@@ -259,9 +260,44 @@ public:
     /// Notify rasterizer that any caches of the specified region should be flushed and invalidated
     void FlushAndInvalidateRegion(DAddr addr, u64 size);
 
+    /// Enables error notifier for the GPU channel
+    void EnableErrorNotifier(u32 memory, u32 offset, u32 size) {
+        LOG_DEBUG(HW_GPU, "Error notifier enabled: memory={:X}, offset={:X}, size={:X}",
+                 memory, offset, size);
+
+        // For now, just store the values and return
+        // TODO: Implement proper error notification handling
+        error_notifier_memory = memory;
+        error_notifier_offset = offset;
+        error_notifier_size = size;
+    }
+
+    /// Sets the timeout for the GPU channel
+    void SetChannelTimeout(const Tegra::Control::ChannelState& channel, u32 timeout) {
+        // Implementation depends on specific GPU requirements
+        LOG_DEBUG(HW_GPU, "Channel timeout set: timeout={:X}", timeout);
+    }
+
+    /// Sets the timeslice for the GPU channel
+    void SetChannelTimeslice(const Tegra::Control::ChannelState& channel, u32 timeslice) {
+        // Implementation depends on specific GPU requirements
+        LOG_DEBUG(HW_GPU, "Channel timeslice set: timeslice={:X}", timeslice);
+    }
+
+    /// Initializes a new object context
+    void InitializeObjectContext(u32 object_id) {
+        // Implementation depends on specific GPU requirements
+        LOG_DEBUG(HW_GPU, "Object context initialized: object_id={:X}", object_id);
+    }
+
 private:
     struct Impl;
     mutable std::unique_ptr<Impl> impl;
+
+    // Add these member variables to store error notifier state
+    u32 error_notifier_memory{};
+    u32 error_notifier_offset{};
+    u32 error_notifier_size{};
 };
 
 } // namespace Tegra

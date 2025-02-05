@@ -26,7 +26,14 @@ class ISystemDisplayService;
 
 class IApplicationDisplayService final : public ServiceFramework<IApplicationDisplayService> {
 public:
-    IApplicationDisplayService(Core::System& system_, std::shared_ptr<Container> container);
+    enum class SessionType {
+        User,    // vi:u
+        System,  // vi:s
+        Manager, // vi:m
+    };
+
+    IApplicationDisplayService(Core::System& system_, std::shared_ptr<Container> container,
+                             SessionType type = SessionType::Manager);
     ~IApplicationDisplayService() override;
 
     std::shared_ptr<Container> GetContainer() const {
@@ -64,13 +71,22 @@ public:
         OutBuffer<BufferAttr_HipcMapTransferAllowsNonSecure | BufferAttr_HipcMapAlias> out_buffer,
         s64 width, s64 height, u64 indirect_layer_consumer_handle,
         ClientAppletResourceUserId aruid);
+    Result GetIndirectLayerImageCropMap(
+        Out<u64> out_size, Out<u64> out_stride,
+        OutBuffer<BufferAttr_HipcMapTransferAllowsNonSecure | BufferAttr_HipcMapAlias> out_buffer,
+        float x1, float y1, float x2, float y2,
+        u64 indirect_layer_consumer_handle,
+        ClientAppletResourceUserId aruid);
     Result GetIndirectLayerImageRequiredMemoryInfo(Out<s64> out_size, Out<s64> out_alignment,
                                                    s64 width, s64 height);
+    Result GetDisplayVsyncEventForDebug(OutCopyHandle<Kernel::KReadableEvent> out_vsync_event,
+                                      u64 display_id);
 
 private:
     const std::shared_ptr<Container> m_container;
-
     KernelHelpers::ServiceContext m_context;
+    const SessionType m_session_type;
+
     std::mutex m_lock{};
     std::set<u64> m_open_layer_ids{};
     std::set<u64> m_stray_layer_ids{};

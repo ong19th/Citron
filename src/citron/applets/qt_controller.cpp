@@ -184,7 +184,7 @@ QtControllerSelectorDialog::QtControllerSelectorDialog(
                     CheckIfParametersMet();
                 });
 
-        connect(connected_controller_checkboxes[i], &QCheckBox::stateChanged, [this, i](int state) {
+        connect(connected_controller_checkboxes[i], &QCheckBox::checkStateChanged, [this, i](Qt::CheckState state) {
             player_groupboxes[i]->setChecked(state == Qt::Checked);
             UpdateControllerIcon(i);
             UpdateControllerState(i);

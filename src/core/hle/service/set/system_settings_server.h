@@ -40,11 +40,9 @@ public:
     template <typename T>
     Result GetSettingsItemValueImpl(T& out_value, const std::string& category,
                                     const std::string& name) {
-        u64 data_size{};
-        std::vector<u8> data(sizeof(T));
-        R_TRY(GetSettingsItemValueImpl(data, data_size, category, name));
-        std::memcpy(&out_value, data.data(), data_size);
-        R_SUCCEED();
+        u64 size{};
+        R_RETURN(GetSettingsItemValueImpl(std::span{reinterpret_cast<u8*>(&out_value), sizeof(T)},
+                                        size, category, name));
     }
 
 public:
@@ -155,6 +153,7 @@ public:
     Result GetFieldTestingFlag(Out<bool> out_field_testing_flag);
     Result GetPanelCrcMode(Out<s32> out_panel_crc_mode);
     Result SetPanelCrcMode(s32 panel_crc_mode);
+    Result GetRebootlessSystemUpdateVersion(Out<RebootlessSystemUpdateVersion> out_rebootless_system_update);
 
 private:
     bool LoadSettingsFile(std::filesystem::path& path, auto&& default_func);

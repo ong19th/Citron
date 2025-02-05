@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 citron Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -28,7 +29,7 @@ constexpr char DISPLAY_TITLE[] = "NintendoSDK Firmware for NX 19.0.1-1.0";
 // Atmosphere version constants.
 
 constexpr u8 ATMOSPHERE_RELEASE_VERSION_MAJOR = 1;
-constexpr u8 ATMOSPHERE_RELEASE_VERSION_MINOR = 0;
+constexpr u8 ATMOSPHERE_RELEASE_VERSION_MINOR = 8;
 constexpr u8 ATMOSPHERE_RELEASE_VERSION_MICRO = 0;
 
 constexpr u32 AtmosphereTargetFirmwareWithRevision(u8 major, u8 minor, u8 micro, u8 rev) {

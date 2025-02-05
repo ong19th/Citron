@@ -9,6 +9,7 @@
 #include <condition_variable>
 #include <memory>
 #include <mutex>
+#include <atomic>
 
 #include "common/common_funcs.h"
 #include "core/hle/service/nvdrv/nvdata.h"
@@ -52,6 +53,14 @@ public:
 
     Kernel::KReadableEvent* GetNativeHandle(u32 type_id) override;
 
+    void AdjustWeakRefcount(s32 addval) override {
+        m_weak_ref_count += addval;
+    }
+
+    void AdjustStrongRefcount(s32 addval) override {
+        m_strong_ref_count += addval;
+    }
+
 public:
     Status RequestBuffer(s32 slot, std::shared_ptr<GraphicBuffer>* buf);
     Status SetBufferCount(s32 buffer_count);
@@ -87,6 +96,8 @@ private:
     std::condition_variable_any callback_condition;
 
     Service::Nvidia::NvCore::NvMap& nvmap;
+    std::atomic<s32> m_weak_ref_count{};
+    std::atomic<s32> m_strong_ref_count{};
 };
 
 } // namespace Service::android

@@ -594,9 +594,10 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
             dynamic_state3_enables = false;
         }
     }
-    if (extensions.extended_dynamic_state3 && is_amd_driver) {
+    if (extensions.extended_dynamic_state3 && (is_amd_driver || driver_id == VK_DRIVER_ID_SAMSUNG_PROPRIETARY)) {
+        // AMD and Samsung drivers have broken extendedDynamicState3ColorBlendEquation
         LOG_WARNING(Render_Vulkan,
-                    "AMD drivers have broken extendedDynamicState3ColorBlendEquation");
+                    "AMD and Samsung drivers have broken extendedDynamicState3ColorBlendEquation");
         features.extended_dynamic_state3.extendedDynamicState3ColorBlendEnable = false;
         features.extended_dynamic_state3.extendedDynamicState3ColorBlendEquation = false;
         dynamic_state3_blending = false;
@@ -919,7 +920,8 @@ bool Device::ShouldBoostClocks() const {
         driver_id == VK_DRIVER_ID_MESA_RADV || driver_id == VK_DRIVER_ID_NVIDIA_PROPRIETARY ||
         driver_id == VK_DRIVER_ID_INTEL_PROPRIETARY_WINDOWS ||
         driver_id == VK_DRIVER_ID_INTEL_OPEN_SOURCE_MESA ||
-        driver_id == VK_DRIVER_ID_QUALCOMM_PROPRIETARY || driver_id == VK_DRIVER_ID_MESA_TURNIP;
+        driver_id == VK_DRIVER_ID_QUALCOMM_PROPRIETARY || driver_id == VK_DRIVER_ID_MESA_TURNIP ||
+        driver_id == VK_DRIVER_ID_SAMSUNG_PROPRIETARY;
 
     const bool is_steam_deck = (vendor_id == 0x1002 && device_id == 0x163F) ||
                                (vendor_id == 0x1002 && device_id == 0x1435);
@@ -1333,22 +1335,24 @@ void Device::CollectPhysicalMemoryInfo() {
         device_access_memory += mem_properties.memoryHeaps[element].size;
     }
     if (!is_integrated) {
-        const u64 reserve_memory = std::min<u64>(device_access_memory / 8, 1_GiB);
+        // Increase reserve memory to be more conservative
+        const u64 reserve_memory = std::min<u64>(device_access_memory / 4, 2_GiB);
         device_access_memory -= reserve_memory;
 
         if (Settings::values.vram_usage_mode.GetValue() != Settings::VramUsageMode::Aggressive) {
-            // Account for resolution scaling in memory limits
-            const size_t normal_memory = 6_GiB;
-            const size_t scaler_memory = 1_GiB * Settings::values.resolution_info.ScaleUp(1);
+            // Increase base memory limit and scale factor for resolution scaling
+            const size_t normal_memory = 8_GiB;
+            const size_t scaler_memory = 2_GiB * Settings::values.resolution_info.ScaleUp(1);
             device_access_memory =
                 std::min<u64>(device_access_memory, normal_memory + scaler_memory);
         }
 
         return;
     }
+    // For integrated GPUs, be more conservative with memory limits
     const s64 available_memory = static_cast<s64>(device_access_memory - device_initial_usage);
     device_access_memory = static_cast<u64>(std::max<s64>(
-        std::min<s64>(available_memory - 8_GiB, 4_GiB), std::min<s64>(local_memory, 4_GiB)));
+        std::min<s64>(available_memory - 4_GiB, 6_GiB), std::min<s64>(local_memory, 6_GiB)));
 }
 
 void Device::CollectToolingInfo() {

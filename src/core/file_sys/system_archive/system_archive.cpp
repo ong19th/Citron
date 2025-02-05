@@ -12,6 +12,12 @@
 
 namespace FileSys::SystemArchive {
 
+namespace {
+    constexpr u64 ApplicationBlackListTID = 0x0100000000000825;
+    constexpr u64 RebootlessSystemUpdateVersionTID = 0x0100000000000826;
+    constexpr u64 ContentActionTableTID = 0x0100000000000827;
+} // namespace
+
 constexpr u64 SYSTEM_ARCHIVE_BASE_TITLE_ID = 0x0100000000000800;
 constexpr std::size_t SYSTEM_ARCHIVE_COUNT = 0x28;
 
@@ -61,9 +67,9 @@ constexpr std::array<SystemArchiveDescriptor, SYSTEM_ARCHIVE_COUNT> SYSTEM_ARCHI
     {0x0100000000000822, "ControllerFirmware", nullptr},
     {0x0100000000000823, "NgWord2", &NgWord2},
     {0x0100000000000824, "PlatformConfigIcosaMariko", nullptr},
-    {0x0100000000000825, "ApplicationBlackList", nullptr},
-    {0x0100000000000826, "RebootlessSystemUpdateVersion", nullptr},
-    {0x0100000000000827, "ContentActionTable", nullptr},
+    {ApplicationBlackListTID, "ApplicationBlackList", nullptr},
+    {RebootlessSystemUpdateVersionTID, "RebootlessSystemUpdateVersion", nullptr},
+    {ContentActionTableTID, "ContentActionTable", nullptr},
 }};
 
 VirtualFile SynthesizeSystemArchive(const u64 title_id) {

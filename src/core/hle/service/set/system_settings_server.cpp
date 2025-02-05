@@ -238,7 +238,7 @@ ISystemSettingsServer::ISystemSettingsServer(Core::System& system_)
         {146, nullptr, "SetConsoleSixAxisSensorAngularVelocityTimeBias"},
         {147, nullptr, "GetConsoleSixAxisSensorAngularAcceleration"},
         {148, nullptr, "SetConsoleSixAxisSensorAngularAcceleration"},
-        {149, nullptr, "GetRebootlessSystemUpdateVersion"},
+        {149, C<&ISystemSettingsServer::GetRebootlessSystemUpdateVersion>, "GetRebootlessSystemUpdateVersion"},
         {150, C<&ISystemSettingsServer::GetDeviceTimeZoneLocationUpdatedTime>, "GetDeviceTimeZoneLocationUpdatedTime"},
         {151, C<&ISystemSettingsServer::SetDeviceTimeZoneLocationUpdatedTime>, "SetDeviceTimeZoneLocationUpdatedTime"},
         {152, C<&ISystemSettingsServer::GetUserSystemClockAutomaticCorrectionUpdatedTime>, "GetUserSystemClockAutomaticCorrectionUpdatedTime"},
@@ -906,7 +906,7 @@ Result ISystemSettingsServer::SetUserSystemClockAutomaticCorrectionEnabled(
 
 Result ISystemSettingsServer::GetDebugModeFlag(Out<bool> is_debug_mode_enabled) {
     const auto result = GetSettingsItemValueImpl<bool>(*is_debug_mode_enabled, "settings_debug",
-                                                       "is_debug_mode_enabled");
+                                                      "is_debug_mode_enabled");
 
     LOG_DEBUG(Service_SET, "called, is_debug_mode_enabled={}", *is_debug_mode_enabled);
     R_RETURN(result);
@@ -1303,6 +1303,18 @@ Result ISystemSettingsServer::SetPanelCrcMode(s32 panel_crc_mode) {
 
     m_system_settings.panel_crc_mode = panel_crc_mode;
     SetSaveNeeded();
+    R_SUCCEED();
+}
+
+Result ISystemSettingsServer::GetRebootlessSystemUpdateVersion(
+    Out<RebootlessSystemUpdateVersion> out_rebootless_system_update) {
+    LOG_INFO(Service_SET, "called");
+
+    out_rebootless_system_update->version = 0;
+    std::memset(out_rebootless_system_update->display_version, 0,
+                sizeof(out_rebootless_system_update->display_version));
+    std::strcpy(out_rebootless_system_update->display_version, "0.0.0");
+
     R_SUCCEED();
 }
 

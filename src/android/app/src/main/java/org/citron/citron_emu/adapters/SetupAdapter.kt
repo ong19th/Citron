@@ -31,7 +31,7 @@ class SetupAdapter(val activity: AppCompatActivity, pages: List<SetupPage>) :
         override fun bind(model: SetupPage) {
             if (model.stepCompleted.invoke() == StepState.COMPLETE) {
                 binding.buttonAction.setVisible(visible = false, gone = false)
-                binding.textConfirmation.setVisible(true)
+                binding.textConfirmation?.setVisible(true)
             }
 
             binding.icon.setImageDrawable(
@@ -68,7 +68,7 @@ class SetupAdapter(val activity: AppCompatActivity, pages: List<SetupPage>) :
 
         override fun onStepCompleted() {
             ViewUtils.hideView(binding.buttonAction, 200)
-            ViewUtils.showView(binding.textConfirmation, 200)
+            binding.textConfirmation?.let { ViewUtils.showView(it, 200) }
             ViewModelProvider(activity)[HomeViewModel::class.java].setShouldPageForward(true)
         }
     }

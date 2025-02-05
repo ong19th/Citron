@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 Citron Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "core/core.h"
@@ -191,62 +192,33 @@ Result MapProcessCodeMemory(Core::System& system, Handle process_handle, u64 dst
 }
 
 Result UnmapProcessCodeMemory(Core::System& system, Handle process_handle, u64 dst_address,
-                              u64 src_address, u64 size) {
+                            u64 src_address, u64 size) {
     LOG_DEBUG(Kernel_SVC,
               "called. process_handle=0x{:08X}, dst_address=0x{:016X}, src_address=0x{:016X}, "
               "size=0x{:016X}",
               process_handle, dst_address, src_address, size);
 
-    if (!Common::Is4KBAligned(dst_address)) {
-        LOG_ERROR(Kernel_SVC, "dst_address is not page-aligned (dst_address=0x{:016X}).",
-                  dst_address);
-        R_THROW(ResultInvalidAddress);
-    }
+    // Add size validation
+    R_UNLESS(size != 0, ResultInvalidSize);
+    R_UNLESS(Common::IsAligned(size, PageSize), ResultInvalidSize);
 
-    if (!Common::Is4KBAligned(src_address)) {
-        LOG_ERROR(Kernel_SVC, "src_address is not page-aligned (src_address=0x{:016X}).",
-                  src_address);
-        R_THROW(ResultInvalidAddress);
-    }
+    // Validate address alignment
+    R_UNLESS(Common::IsAligned(dst_address, PageSize), ResultInvalidAddress);
+    R_UNLESS(Common::IsAligned(src_address, PageSize), ResultInvalidAddress);
 
-    if (size == 0 || !Common::Is4KBAligned(size)) {
-        LOG_ERROR(Kernel_SVC, "Size is zero or not page-aligned (size=0x{:016X}).", size);
-        R_THROW(ResultInvalidSize);
-    }
+    // Validate address ranges
+    R_UNLESS(IsValidAddressRange(dst_address, size), ResultInvalidCurrentMemory);
+    R_UNLESS(IsValidAddressRange(src_address, size), ResultInvalidCurrentMemory);
 
-    if (!IsValidAddressRange(dst_address, size)) {
-        LOG_ERROR(Kernel_SVC,
-                  "Destination address range overflows the address space (dst_address=0x{:016X}, "
-                  "size=0x{:016X}).",
-                  dst_address, size);
-        R_THROW(ResultInvalidCurrentMemory);
-    }
+    // Get the process from its handle
+    KScopedAutoObject process =
+        GetCurrentProcess(system.Kernel()).GetHandleTable().GetObject<KProcess>(process_handle);
+    R_UNLESS(process.IsNotNull(), ResultInvalidHandle);
 
-    if (!IsValidAddressRange(src_address, size)) {
-        LOG_ERROR(Kernel_SVC,
-                  "Source address range overflows the address space (src_address=0x{:016X}, "
-                  "size=0x{:016X}).",
-                  src_address, size);
-        R_THROW(ResultInvalidCurrentMemory);
-    }
-
-    const auto& handle_table = GetCurrentProcess(system.Kernel()).GetHandleTable();
-    KScopedAutoObject process = handle_table.GetObject<KProcess>(process_handle);
-    if (process.IsNull()) {
-        LOG_ERROR(Kernel_SVC, "Invalid process handle specified (handle=0x{:08X}).",
-                  process_handle);
-        R_THROW(ResultInvalidHandle);
-    }
-
+    // Get the page table
     auto& page_table = process->GetPageTable();
-    if (!page_table.Contains(src_address, size)) {
-        LOG_ERROR(Kernel_SVC,
-                  "Source address range is not within the address space (src_address=0x{:016X}, "
-                  "size=0x{:016X}).",
-                  src_address, size);
-        R_THROW(ResultInvalidCurrentMemory);
-    }
 
+    // Perform the unmapping
     R_RETURN(page_table.UnmapCodeMemory(dst_address, src_address, size));
 }
 

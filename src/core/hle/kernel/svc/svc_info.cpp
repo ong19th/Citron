@@ -174,9 +174,15 @@ Result GetInfo(Core::System& system, u64* result, InfoType info_id_type, Handle 
         R_SUCCEED();
 
     case InfoType::InitialProcessIdRange:
-        LOG_WARNING(Kernel_SVC,
-                    "(STUBBED) Attempted to query privileged process id bounds, returned 0");
-        *result = 0;
+        R_UNLESS(handle == 0, ResultInvalidHandle);
+        R_UNLESS(info_sub_id <= 1, ResultInvalidCombination);
+
+        // Return the valid range for initial process IDs
+        if (info_sub_id == 0) {
+            *result = 1;       // Minimum initial process ID
+        } else {
+            *result = 0x50;    // Maximum initial process ID
+        }
         R_SUCCEED();
 
     case InfoType::ThreadTickCount: {

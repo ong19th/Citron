@@ -26,6 +26,7 @@ enum class Errno : u32 {
     TIMEDOUT = 110,
     CONNREFUSED = 111,
     INPROGRESS = 115,
+    NOMEM = 12,
 };
 
 enum class GetAddrInfoError : s32 {

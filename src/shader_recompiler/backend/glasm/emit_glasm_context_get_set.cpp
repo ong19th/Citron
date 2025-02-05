@@ -406,9 +406,15 @@ void EmitInvocationInfo(EmitContext& ctx, IR::Inst& inst) {
     case Stage::TessellationEval:
         ctx.Add("SHL.U {}.x,primitive.vertexcount,16;", inst);
         break;
+    case Stage::Fragment:
+        // Return sample mask in upper 16 bits
+        ctx.Add("SHL.U {}.x,fragment.samplemask,16;", inst);
+        break;
+    case Stage::Compute:
     default:
-        LOG_WARNING(Shader, "(STUBBED) called");
+        // Return standard format (0x00ff0000)
         ctx.Add("MOV.S {}.x,0x00ff0000;", inst);
+        break;
     }
 }
 

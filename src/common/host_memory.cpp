@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 citron Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifdef _WIN32
@@ -199,11 +200,20 @@ public:
         UNREACHABLE();
     }
 
+    bool IsValidMapping(size_t offset, size_t length) const {
+        return (offset + length) <= backing_size;
+    }
+
+    bool IsDirectMappingEnabled() const {
+        return direct_mapping_enabled;
+    }
+
     const size_t backing_size; ///< Size of the backing memory in bytes
     const size_t virtual_size; ///< Size of the virtual address placeholder in bytes
 
     u8* backing_base{};
     u8* virtual_base{};
+    bool direct_mapping_enabled{false};
 
 private:
     /// Release all resources in the object
@@ -491,8 +501,18 @@ public:
         // Intersect the range with our address space.
         AdjustMap(&virtual_offset, &length);
 
+        // If length is 0 after adjustment, nothing to map
+        if (length == 0) {
+            return;
+        }
+
         // We are removing a placeholder.
-        free_manager.AllocateBlock(virtual_base + virtual_offset, length);
+        try {
+            free_manager.AllocateBlock(virtual_base + virtual_offset, length);
+        } catch (const std::exception& e) {
+            LOG_ERROR(HW_Memory, "Failed to allocate block: {}", e.what());
+            return;
+        }
 
         // Deduce mapping protection flags.
         int flags = PROT_NONE;
@@ -510,23 +530,48 @@ public:
 
         void* ret = mmap(virtual_base + virtual_offset, length, flags, MAP_SHARED | MAP_FIXED, fd,
                          host_offset);
-        ASSERT_MSG(ret != MAP_FAILED, "mmap failed: {}", strerror(errno));
+        if (ret == MAP_FAILED) {
+            LOG_ERROR(HW_Memory, "mmap failed: {}", strerror(errno));
+            // Try to restore the placeholder
+            try {
+                void* placeholder = mmap(virtual_base + virtual_offset, length, PROT_NONE,
+                                       MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+                if (placeholder != MAP_FAILED) {
+                    free_manager.FreeBlock(virtual_base + virtual_offset, length);
+                }
+            } catch (...) {
+                // Best effort recovery
+            }
+            return;
+        }
     }
 
     void Unmap(size_t virtual_offset, size_t length) {
-        // The method name is wrong. We're still talking about the virtual range.
-        // We don't want to unmap, we want to reserve this memory.
-
         // Intersect the range with our address space.
         AdjustMap(&virtual_offset, &length);
 
-        // Merge with any adjacent placeholder mappings.
-        auto [merged_pointer, merged_size] =
-            free_manager.FreeBlock(virtual_base + virtual_offset, length);
+        // If length is 0 after adjustment, nothing to unmap
+        if (length == 0) {
+            return;
+        }
 
-        void* ret = mmap(merged_pointer, merged_size, PROT_NONE,
-                         MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
-        ASSERT_MSG(ret != MAP_FAILED, "mmap failed: {}", strerror(errno));
+        try {
+            // Merge with any adjacent placeholder mappings.
+            auto [merged_pointer, merged_size] =
+                free_manager.FreeBlock(virtual_base + virtual_offset, length);
+
+            void* ret = mmap(merged_pointer, merged_size, PROT_NONE,
+                            MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+            if (ret == MAP_FAILED) {
+                LOG_ERROR(HW_Memory, "mmap failed during unmap: {}", strerror(errno));
+                // Try to restore the original mapping
+                free_manager.AllocateBlock(virtual_base + virtual_offset, length);
+                return;
+            }
+        } catch (const std::exception& e) {
+            LOG_ERROR(HW_Memory, "Failed to free block: {}", e.what());
+            return;
+        }
     }
 
     void Protect(size_t virtual_offset, size_t length, bool read, bool write, bool execute) {
@@ -564,6 +609,14 @@ public:
 
     void EnableDirectMappedAddress() {
         virtual_base = nullptr;
+    }
+
+    bool IsValidMapping(size_t offset, size_t length) const {
+        return (offset + length) <= backing_size;
+    }
+
+    bool IsDirectMappingEnabled() const {
+        return virtual_base == nullptr;
     }
 
     const size_t backing_size; ///< Size of the backing memory in bytes
@@ -639,6 +692,14 @@ public:
 
     void EnableDirectMappedAddress() {}
 
+    bool IsValidMapping(size_t offset, size_t length) const {
+        return false;
+    }
+
+    bool IsDirectMappingEnabled() const {
+        return false;
+    }
+
     u8* backing_base{nullptr};
     u8* virtual_base{nullptr};
 };
@@ -660,7 +721,9 @@ HostMemory::HostMemory(size_t backing_size_, size_t virtual_size_)
             // Ensure the virtual base is aligned to the L2 block size.
             virtual_base = reinterpret_cast<u8*>(
                 Common::AlignUp(reinterpret_cast<uintptr_t>(virtual_base), HugePageSize));
-            virtual_base_offset = virtual_base - impl->virtual_base;
+            virtual_base_offset = static_cast<size_t>(
+                reinterpret_cast<uintptr_t>(virtual_base) -
+                reinterpret_cast<uintptr_t>(impl->virtual_base));
         }
 
     } catch (const std::bad_alloc&) {
@@ -685,10 +748,18 @@ void HostMemory::Map(size_t virtual_offset, size_t host_offset, size_t length,
     ASSERT(length % PageAlignment == 0);
     ASSERT(virtual_offset + length <= virtual_size);
     ASSERT(host_offset + length <= backing_size);
+
     if (length == 0 || !virtual_base || !impl) {
         return;
     }
+
     impl->Map(virtual_offset + virtual_base_offset, host_offset, length, perms);
+
+    // Verify mapping was successful
+    if (!impl->IsValidMapping(virtual_offset + virtual_base_offset, length)) {
+        LOG_CRITICAL(Common_Memory, "Failed to verify memory mapping: virtual_offset={:x}, host_offset={:x}, length={:x}",
+                    virtual_offset, host_offset, length);
+    }
 }
 
 void HostMemory::Unmap(size_t virtual_offset, size_t length, bool separate_heap) {
@@ -721,9 +792,18 @@ void HostMemory::ClearBackingRegion(size_t physical_offset, size_t length, u32 f
 }
 
 void HostMemory::EnableDirectMappedAddress() {
-    if (impl) {
-        impl->EnableDirectMappedAddress();
+    if (!impl) {
+        LOG_ERROR(Common_Memory, "Implementation not initialized");
+        return;
+    }
+
+    impl->EnableDirectMappedAddress();
+
+    // Only update virtual_size if the direct mapping was successful
+    if (impl->IsDirectMappingEnabled()) {
         virtual_size += reinterpret_cast<uintptr_t>(virtual_base);
+    } else {
+        LOG_ERROR(Common_Memory, "Failed to enable direct mapped address");
     }
 }
 

@@ -218,6 +218,17 @@ private:
     Kernel::KEvent* sm_exception_breakpoint_int_report_event;
     Kernel::KEvent* sm_exception_breakpoint_pause_report_event;
     Kernel::KEvent* error_notifier_event;
+
+    // Error notifier state
+    u64_le error_notifier_offset{};
+    u64_le error_notifier_size{};
+    u32_le error_notifier_memory{};
+
+    // Channel configuration
+    u32_le channel_timeout{};
+
+    // Object tracking
+    u64_le current_obj_id{};
 };
 
 } // namespace Service::Nvidia::Devices

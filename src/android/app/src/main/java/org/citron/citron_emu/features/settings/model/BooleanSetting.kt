@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2023 yuzu Emulator Project
+// SPDX-FileCopyrightText: 2025 Citron Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 package org.citron.citron_emu.features.settings.model
@@ -27,6 +28,7 @@ enum class BooleanSetting(override val key: String) : AbstractBooleanSetting {
     SHOW_INPUT_OVERLAY("show_input_overlay"),
     TOUCHSCREEN("touchscreen"),
     SHOW_THERMAL_OVERLAY("show_thermal_overlay"),
+    SHOW_RAM_OVERLAY("show_ram_overlay"),
     USE_AUTO_STUB("use_auto_stub");
 
     override fun getBoolean(needsGlobal: Boolean): Boolean =

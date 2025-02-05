@@ -312,7 +312,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 # Enforce the search mode of non-required packages for better and shorter failure messages
 find_package(Boost REQUIRED context)
 find_package(enet MODULE)
-find_package(fmt 9 REQUIRED)
+find_package(fmt REQUIRED)
 if (CITRON_USE_LLVM_DEMANGLE)
     find_package(LLVM MODULE COMPONENTS Demangle)
 endif()
@@ -327,7 +327,7 @@ find_package(ZLIB REQUIRED)
 find_package(zstd REQUIRED)
 
 if (NOT CITRON_USE_EXTERNAL_VULKAN_HEADERS)
-    find_package(VulkanHeaders 1.4.304 REQUIRED)
+    find_package(VulkanHeaders 1.4.306 REQUIRED)
 endif()
 
 if (NOT CITRON_USE_EXTERNAL_VULKAN_UTILITY_LIBRARIES)
@@ -672,4 +672,8 @@ if(ENABLE_QT AND UNIX AND NOT APPLE)
             DESTINATION "share/mime/packages")
     install(FILES "dist/org.citron_emu.citron.metainfo.xml"
             DESTINATION "share/metainfo")
+endif()
+
+if (USE_DISCORD_PRESENCE)
+    target_compile_options(discord-rpc PRIVATE -fpermissive)
 endif()

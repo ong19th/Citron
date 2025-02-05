@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2018 Citra Emulator Project
+// SPDX-FileCopyrightText: 2025 citron Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <chrono>
@@ -58,7 +59,7 @@ DiscordRichPresence presence {};
 
 // Store the URL string to prevent it from being destroyed
 if (!game_title_id.empty()) {
-game_url = fmt::format("{}{}/128/128", tinfoil_base_url, game_title_id);
+game_url = fmt::format("{}{}/256/256", tinfoil_base_url, game_title_id);
 // Make sure the string stays alive for the duration of the presence
 cached_url = game_url;
 presence.largeImageKey = cached_url.c_str();
@@ -90,7 +91,7 @@ fmt::print("Title ID: {}\n", game_title_id);
 QNetworkAccessManager manager;
 QNetworkRequest request;
 request.setUrl(QUrl(QString::fromStdString(
-fmt::format("https://tinfoil.media/ti/{}/128/128", game_title_id))));
+fmt::format("https://tinfoil.media/ti/{}/256/256", game_title_id))));
 request.setTransferTimeout(10000);
 QNetworkReply * reply = manager.head(request);
 QEventLoop request_event_loop;

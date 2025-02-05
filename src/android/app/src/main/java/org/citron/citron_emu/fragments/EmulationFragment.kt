@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2023 yuzu Emulator Project
+// SPDX-FileCopyrightText: 2025 Citron Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 package org.citron.citron_emu.fragments
@@ -11,9 +12,11 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
+import android.graphics.Color
 import android.net.Uri
 import android.os.BatteryManager
 import android.os.Bundle
+import android.os.Debug
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
@@ -68,6 +71,7 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
     private var emulationActivity: EmulationActivity? = null
     private var perfStatsUpdater: (() -> Unit)? = null
     private var thermalStatsUpdater: (() -> Unit)? = null
+    private var ramStatsUpdater: (() -> Unit)? = null
 
     private var _binding: FragmentEmulationBinding? = null
     private val binding get() = _binding!!
@@ -82,6 +86,8 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
     private var isInFoldableLayout = false
 
     private lateinit var powerManager: PowerManager
+
+    private val ramStatsUpdateHandler = Handler(Looper.myLooper()!!)
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -376,6 +382,7 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                 // Setup overlays
                 updateShowFpsOverlay()
                 updateThermalOverlay()
+                updateRamOverlay()
             }
         }
         emulationViewModel.isEmulationStopping.collect(viewLifecycleOwner) {
@@ -470,6 +477,9 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        if (ramStatsUpdater != null) {
+            ramStatsUpdateHandler.removeCallbacks(ramStatsUpdater!!)
+        }
         _binding = null
     }
 
@@ -552,8 +562,9 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
             emulationViewModel.emulationStarted.value &&
             !emulationViewModel.isEmulationStopping.value
         ) {
-            // Get thermal status
+            // Get thermal status for color
             val thermalStatus = when (powerManager.currentThermalStatus) {
+                PowerManager.THERMAL_STATUS_NONE -> 0f
                 PowerManager.THERMAL_STATUS_LIGHT -> 0.25f
                 PowerManager.THERMAL_STATUS_MODERATE -> 0.5f
                 PowerManager.THERMAL_STATUS_SEVERE -> 0.75f
@@ -563,34 +574,57 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                 else -> 0f
             }
 
-            // Convert to Fahrenheit for additional info
+            // Convert to Fahrenheit
             val fahrenheit = (temperature * 9f / 5f) + 32f
 
-            // Create progress bar using block elements
-            val progressBarLength = 12
-            val filledBars = (thermalStatus * progressBarLength).toInt()
-            val progressBar = buildString {
-                append("│") // Left border
-                repeat(filledBars) { append("█") }
-                repeat(progressBarLength - filledBars) { append("░") }
-                append("│") // Right border
-                append(" ")
-                append(String.format("%3d%%", (thermalStatus * 100).toInt()))
-            }
-
-            // Color interpolation based on temperature (green at 30°C, red at 45°C)
-            val normalizedTemp = ((temperature - 30f) / 15f).coerceIn(0f, 1f)
-            val red = (normalizedTemp * 255).toInt()
-            val green = ((1f - normalizedTemp) * 255).toInt()
+            // Color based on thermal status (green to red)
+            val red = (thermalStatus * 255).toInt()
+            val green = ((1f - thermalStatus) * 255).toInt()
             val color = android.graphics.Color.rgb(red, green, 0)
 
             binding.showThermalsText.setTextColor(color)
-            binding.showThermalsText.text = String.format(
-                "%s\n%.1f°C • %.1f°F",
-                progressBar,
-                temperature,
-                fahrenheit
-            )
+            binding.showThermalsText.text = String.format("%.1f°C • %.1f°F", temperature, fahrenheit)
+        }
+    }
+
+    private fun updateRamOverlay() {
+        val showOverlay = BooleanSetting.SHOW_RAM_OVERLAY.getBoolean()
+        binding.showRamText.setVisible(showOverlay)
+        if (showOverlay) {
+            ramStatsUpdater = {
+                if (emulationViewModel.emulationStarted.value &&
+                    !emulationViewModel.isEmulationStopping.value
+                ) {
+                    val runtime = Runtime.getRuntime()
+                    val nativeHeapSize = Debug.getNativeHeapSize()
+                    val nativeHeapFreeSize = Debug.getNativeHeapFreeSize()
+                    val nativeHeapUsed = nativeHeapSize - nativeHeapFreeSize
+
+                    val usedMemInMB = nativeHeapUsed / 1048576L
+                    val maxMemInMB = nativeHeapSize / 1048576L
+                    val percentUsed = (nativeHeapUsed.toFloat() / nativeHeapSize.toFloat() * 100f)
+
+                    // Color interpolation from green to red based on usage percentage
+                    val normalizedUsage = (percentUsed / 100f).coerceIn(0f, 1f)
+                    val red = (normalizedUsage * 255).toInt()
+                    val green = ((1f - normalizedUsage) * 255).toInt()
+                    val color = Color.rgb(red, green, 0)
+
+                    binding.showRamText.setTextColor(color)
+                    binding.showRamText.text = String.format(
+                        "\nRAM: %d/%d MB (%.1f%%)",
+                        usedMemInMB,
+                        maxMemInMB,
+                        percentUsed
+                    )
+                    ramStatsUpdateHandler.postDelayed(ramStatsUpdater!!, 1000)
+                }
+            }
+            ramStatsUpdateHandler.post(ramStatsUpdater!!)
+        } else {
+            if (ramStatsUpdater != null) {
+                ramStatsUpdateHandler.removeCallbacks(ramStatsUpdater!!)
+            }
         }
     }
 
@@ -723,6 +757,10 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                 BooleanSetting.SHOW_PERFORMANCE_OVERLAY.getBoolean()
             findItem(R.id.thermal_indicator).isChecked =
                 BooleanSetting.SHOW_THERMAL_OVERLAY.getBoolean()
+            findItem(R.id.ram_meter).apply {
+                isChecked = BooleanSetting.SHOW_RAM_OVERLAY.getBoolean()
+                isEnabled = false  // This grays out the option
+            }
             findItem(R.id.menu_rel_stick_center).isChecked =
                 BooleanSetting.JOYSTICK_REL_CENTER.getBoolean()
             findItem(R.id.menu_dpad_slide).isChecked = BooleanSetting.DPAD_SLIDE.getBoolean()
@@ -746,6 +784,11 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                     it.isChecked = !it.isChecked
                     BooleanSetting.SHOW_THERMAL_OVERLAY.setBoolean(it.isChecked)
                     updateThermalOverlay()
+                    true
+                }
+
+                R.id.ram_meter -> {
+                    // Do nothing since it's disabled
                     true
                 }
 

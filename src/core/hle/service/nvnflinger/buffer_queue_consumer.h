@@ -8,6 +8,7 @@
 
 #include <chrono>
 #include <memory>
+#include <atomic>
 
 #include "common/common_types.h"
 #include "core/hle/service/nvnflinger/binder.h"
@@ -36,9 +37,19 @@ public:
 
     Kernel::KReadableEvent* GetNativeHandle(u32 type_id) override;
 
+    void AdjustWeakRefcount(s32 addval) override {
+        m_weak_ref_count += addval;
+    }
+
+    void AdjustStrongRefcount(s32 addval) override {
+        m_strong_ref_count += addval;
+    }
+
 private:
     std::shared_ptr<BufferQueueCore> core;
     BufferQueueDefs::SlotsType& slots;
+    std::atomic<s32> m_weak_ref_count{};
+    std::atomic<s32> m_strong_ref_count{};
 };
 
 } // namespace Service::android
