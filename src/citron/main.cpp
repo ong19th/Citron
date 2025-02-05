@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2014 Citra Emulator Project
+// SPDX-FileCopyrightText: 2025 citron Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cinttypes>
@@ -203,21 +204,13 @@ enum class CalloutFlag : uint32_t {
 };
 
 void GMainWindow::ShowTelemetryCallout() {
-    if (UISettings::values.callout_flags.GetValue() &
-        static_cast<uint32_t>(CalloutFlag::Telemetry)) {
-        return;
-    }
+    // Default telemetry to disabled without showing popup
+    Settings::values.enable_telemetry = false;
+    system->ApplySettings();
 
+    // Mark telemetry callout as shown to prevent future popups
     UISettings::values.callout_flags =
         UISettings::values.callout_flags.GetValue() | static_cast<uint32_t>(CalloutFlag::Telemetry);
-    const QString telemetry_message =
-        tr("<a href='https://citron-emu.org/help/feature/telemetry/'>Anonymous "
-           "data is collected</a> to help improve citron. "
-           "<br/><br/>Would you like to share your usage data with us?");
-    if (!question(this, tr("Telemetry"), telemetry_message)) {
-        Settings::values.enable_telemetry = false;
-        system->ApplySettings();
-    }
 }
 
 const int GMainWindow::max_recent_files_item;
