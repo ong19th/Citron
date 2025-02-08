@@ -57,6 +57,7 @@ IAudioController::IAudioController(Core::System& system_)
         {40, nullptr, "GetSystemInformationForDebug"},
         {41, nullptr, "SetVolumeButtonLongPressTime"},
         {42, nullptr, "SetNativeVolumeForDebug"},
+        {5000, D<&IAudioController::Unknown5000>, "Unknown5000"},
         {10000, nullptr, "NotifyAudioOutputTargetForPlayReport"},
         {10001, nullptr, "NotifyAudioOutputChannelCountForPlayReport"},
         {10002, nullptr, "NotifyUnsupportedUsbOutputDeviceAttachedForPlayReport"},
@@ -68,6 +69,9 @@ IAudioController::IAudioController(Core::System& system_)
         {10105, nullptr, "BindAudioOutputChannelCountUpdateEventForPlayReport"},
         {10106, nullptr, "GetDefaultAudioOutputTargetForPlayReport"},
         {50000, nullptr, "SetAnalogInputBoostGainForPrototyping"},
+        {50001, nullptr, "OverrideDefaultTargetForDebug"},
+        {50003, nullptr, "SetForceOverrideExternalDeviceNameForDebug"},
+        {50004, nullptr, "ClearForceOverrideExternalDeviceNameForDebug"}
     };
     // clang-format on
 
@@ -173,6 +177,15 @@ Result IAudioController::AcquireTargetNotification(
     LOG_WARNING(Service_AM, "(STUBBED) called");
 
     *out_notification_event = &notification_event->GetReadableEvent();
+    R_SUCCEED();
+}
+
+Result IAudioController::Unknown5000(Out<SharedPointer<IAudioController>> out_audio_controller) {
+    LOG_DEBUG(Audio, "Creating duplicate audio controller interface");
+
+    // Return a new reference to this controller instance
+    *out_audio_controller = SharedFrom(this);
+
     R_SUCCEED();
 }
 
