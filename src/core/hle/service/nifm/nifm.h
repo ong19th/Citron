@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 citron Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -27,6 +28,8 @@ private:
     void CreateScanRequest(HLERequestContext& ctx);
     void CreateRequest(HLERequestContext& ctx);
     void GetCurrentNetworkProfile(HLERequestContext& ctx);
+    void EnumerateNetworkInterfaces(HLERequestContext& ctx);
+    void EnumerateNetworkProfiles(HLERequestContext& ctx);
     void RemoveNetworkProfile(HLERequestContext& ctx);
     void GetCurrentIpAddress(HLERequestContext& ctx);
     void CreateTemporaryNetworkProfile(HLERequestContext& ctx);
@@ -36,6 +39,8 @@ private:
     void IsEthernetCommunicationEnabled(HLERequestContext& ctx);
     void IsAnyInternetRequestAccepted(HLERequestContext& ctx);
     void IsAnyForegroundRequestAccepted(HLERequestContext& ctx);
+    void ConfirmSystemAvailability(HLERequestContext& ctx);
+    void SetBackgroundRequestEnabled(HLERequestContext& ctx);
 
     Network::RoomNetwork& network;
 };
