@@ -205,9 +205,10 @@ private:
                                  std::span<IoctlGpuCharacteristics> gpu_characteristics);
 
     NvResult GetTPCMasks1(IoctlGpuGetTpcMasksArgs& params);
+    NvResult GetTpcMasks2(IoctlGetTpcMasks& params);
     NvResult GetTPCMasks3(IoctlGpuGetTpcMasksArgs& params, std::span<u32> tpc_mask);
 
-    NvResult GetTpcMasks2(IoctlGetTpcMasks& params);
+
 
     NvResult GetActiveSlotMask(IoctlActiveSlotMask& params);
     NvResult ZCullGetCtxSize(IoctlZcullGetCtxSize& params);

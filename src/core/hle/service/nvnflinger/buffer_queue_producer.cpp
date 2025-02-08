@@ -138,6 +138,7 @@ Status BufferQueueProducer::WaitForFreeSlotThenRelock(bool async, s32* found, St
 
         // Free up any buffers that are in slots beyond the max buffer count
         for (s32 s = max_buffer_count; s < BufferQueueDefs::NUM_BUFFER_SLOTS; ++s) {
+            ASSERT(slots[s].buffer_state == BufferState::Free);
             if (slots[s].graphic_buffer != nullptr && slots[s].buffer_state == BufferState::Free &&
                 !slots[s].is_preallocated) {
                 core->FreeBufferLocked(s);
@@ -176,10 +177,26 @@ Status BufferQueueProducer::WaitForFreeSlotThenRelock(bool async, s32* found, St
             return Status::InvalidOperation;
         }
 
-        // Handle queue size limits
+        // See whether a buffer has been queued since the last SetBufferCount so we know whether to
+        // perform the min undequeued buffers check below
+        if (core->buffer_has_been_queued) {
+            // Make sure the producer is not trying to dequeue more buffers than allowed
+            const s32 new_undequeued_count = max_buffer_count - (dequeued_count + 1);
+            const s32 min_undequeued_count = core->GetMinUndequeuedBufferCountLocked(async);
+            if (new_undequeued_count < min_undequeued_count) {
+                LOG_ERROR(Service_Nvnflinger,
+                          "min undequeued buffer count({}) exceeded (dequeued={} undequeued={})",
+                          min_undequeued_count, dequeued_count, new_undequeued_count);
+                return Status::InvalidOperation;
+            }
+        }
+
+        // If we disconnect and reconnect quickly, we can be in a state where our slots are empty
+        // but we have many buffers in the queue. This can cause us to run out of memory if we
+        // outrun the consumer. Wait here if it looks like we have too many buffers queued up.
         const bool too_many_buffers = core->queue.size() > static_cast<size_t>(max_buffer_count);
         if (too_many_buffers) {
-            LOG_WARNING(Service_Nvnflinger, "Queue size {} exceeds max buffer count {}, waiting",
+            LOG_ERROR(Service_Nvnflinger, "Queue size {} exceeds max buffer count {}, waiting",
                        core->queue.size(), max_buffer_count);
         }
 
@@ -191,11 +208,8 @@ Status BufferQueueProducer::WaitForFreeSlotThenRelock(bool async, s32* found, St
             }
 
             if (!core->WaitForDequeueCondition(lk)) {
-                if (core->is_abandoned) {
-                    LOG_ERROR(Service_Nvnflinger, "BufferQueue was abandoned while waiting");
-                    return Status::NoInit;
-                }
-                continue;
+                // We are no longer running
+                return Status::NoError;
             }
         }
     }

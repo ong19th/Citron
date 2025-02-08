@@ -38,7 +38,7 @@ private:
     std::shared_ptr<Module> nvdrv;
 
     u64 pid{};
-    bool is_initialized{false};
+    bool is_initialized{};
     NvCore::SessionId session_id{};
     Common::ScratchBuffer<u8> output_buffer;
     Common::ScratchBuffer<u8> inline_output_buffer;
