@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 citron Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
@@ -76,34 +77,33 @@ class IManagerForSystemService final : public ServiceFramework<IManagerForSystem
 public:
     explicit IManagerForSystemService(Core::System& system_, Common::UUID uuid)
         : ServiceFramework{system_, "IManagerForSystemService"}, account_id{uuid} {
-        // clang-format off
         static const FunctionInfo functions[] = {
             {0, D<&IManagerForSystemService::CheckAvailability>, "CheckAvailability"},
             {1, D<&IManagerForSystemService::GetAccountId>, "GetAccountId"},
             {2, nullptr, "EnsureIdTokenCacheAsync"},
             {3, nullptr, "LoadIdTokenCache"},
             {100, nullptr, "SetSystemProgramIdentification"},
-            {101, nullptr, "RefreshNotificationTokenAsync"}, // 7.0.0+
-            {110, nullptr, "GetServiceEntryRequirementCache"}, // 4.0.0+
-            {111, nullptr, "InvalidateServiceEntryRequirementCache"}, // 4.0.0+
-            {112, nullptr, "InvalidateTokenCache"}, // 4.0.0 - 6.2.0
-            {113, nullptr, "GetServiceEntryRequirementCacheForOnlinePlay"}, // 6.1.0+
-            {120, nullptr, "GetNintendoAccountId"},
-            {121, nullptr, "CalculateNintendoAccountAuthenticationFingerprint"}, // 9.0.0+
-            {130, nullptr, "GetNintendoAccountUserResourceCache"},
+            {101, nullptr, "RefreshNotificationTokenAsync"},
+            {110, nullptr, "GetServiceEntryRequirementCache"},
+            {111, nullptr, "InvalidateServiceEntryRequirementCache"},
+            {112, nullptr, "InvalidateTokenCache"},
+            {113, nullptr, "GetServiceEntryRequirementCacheForOnlinePlay"},
+            {120, D<&IManagerForSystemService::GetNintendoAccountId>, "GetNintendoAccountId"},
+            {121, nullptr, "CalculateNintendoAccountAuthenticationFingerprint"},
+            {130, D<&IManagerForSystemService::GetNintendoAccountUserResourceCache>, "GetNintendoAccountUserResourceCache"},
             {131, nullptr, "RefreshNintendoAccountUserResourceCacheAsync"},
             {132, nullptr, "RefreshNintendoAccountUserResourceCacheAsyncIfSecondsElapsed"},
-            {133, nullptr, "GetNintendoAccountVerificationUrlCache"}, // 9.0.0+
-            {134, nullptr, "RefreshNintendoAccountVerificationUrlCache"}, // 9.0.0+
-            {135, nullptr, "RefreshNintendoAccountVerificationUrlCacheAsyncIfSecondsElapsed"}, // 9.0.0+
-            {140, nullptr, "GetNetworkServiceLicenseCache"}, // 5.0.0+
-            {141, nullptr, "RefreshNetworkServiceLicenseCacheAsync"}, // 5.0.0+
-            {142, nullptr, "RefreshNetworkServiceLicenseCacheAsyncIfSecondsElapsed"}, // 5.0.0+
+            {133, nullptr, "GetNintendoAccountVerificationUrlCache"},
+            {134, nullptr, "RefreshNintendoAccountVerificationUrlCache"},
+            {135, nullptr, "RefreshNintendoAccountVerificationUrlCacheAsyncIfSecondsElapsed"},
+            {140, nullptr, "GetNetworkServiceLicenseCache"},
+            {141, nullptr, "RefreshNetworkServiceLicenseCacheAsync"},
+            {142, nullptr, "RefreshNetworkServiceLicenseCacheAsyncIfSecondsElapsed"},
+            {143, D<&IManagerForSystemService::GetNetworkServiceLicenseCacheEx>, "GetNetworkServiceLicenseCacheEx"},
             {150, nullptr, "CreateAuthorizationRequest"},
             {160, nullptr, "RequiresUpdateNetworkServiceAccountIdTokenCache"},
             {161, nullptr, "RequireReauthenticationOfNetworkServiceAccount"},
         };
-        // clang-format on
 
         RegisterHandlers(functions);
     }
@@ -120,6 +120,28 @@ private:
         R_SUCCEED();
     }
 
+    Result GetNetworkServiceLicenseCacheEx() {
+        LOG_DEBUG(Service_ACC, "(STUBBED) called.");
+        R_THROW(ResultUnknown);
+    }
+
+    void GetNintendoAccountId(HLERequestContext& ctx) {
+        LOG_DEBUG(Service_ACC, "(STUBBED) called");
+
+        // Returns a u64 Nintendo Account ID
+        IPC::ResponseBuilder rb{ctx, 4};
+        rb.Push(ResultSuccess);
+        rb.Push<u64>(0); // Nintendo Account ID stub
+    }
+
+    void GetNintendoAccountUserResourceCache(HLERequestContext& ctx) {
+        LOG_DEBUG(Service_ACC, "(STUBBED) called");
+
+        // Takes buffer of type 0x6 (out buffer) for NintendoAccountUserResourceCache
+        IPC::ResponseBuilder rb{ctx, 2};
+        rb.Push(ResultSuccess);
+    }
+
     Common::UUID account_id;
 };
 
@@ -128,7 +150,6 @@ class IFloatingRegistrationRequest final : public ServiceFramework<IFloatingRegi
 public:
     explicit IFloatingRegistrationRequest(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "IFloatingRegistrationRequest"} {
-        // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "GetSessionId"},
             {12, nullptr, "GetAccountId"},
@@ -136,14 +157,13 @@ public:
             {14, nullptr, "GetNickname"},
             {15, nullptr, "GetProfileImage"},
             {21, nullptr, "LoadIdTokenCache"},
-            {100, nullptr, "RegisterUser"}, // [1.0.0-3.0.2] RegisterAsync
-            {101, nullptr, "RegisterUserWithUid"}, // [1.0.0-3.0.2] RegisterWithUidAsync
-            {102, nullptr, "RegisterNetworkServiceAccountAsync"}, // 4.0.0+
-            {103, nullptr, "RegisterNetworkServiceAccountWithUidAsync"}, // 4.0.0+
+            {100, nullptr, "RegisterUser"},
+            {101, nullptr, "RegisterUserWithUid"},
+            {102, nullptr, "RegisterNetworkServiceAccountAsync"},
+            {103, nullptr, "RegisterNetworkServiceAccountWithUidAsync"},
             {110, nullptr, "SetSystemProgramIdentification"},
             {111, nullptr, "EnsureIdTokenCacheAsync"},
         };
-        // clang-format on
 
         RegisterHandlers(functions);
     }
@@ -153,29 +173,28 @@ class IAdministrator final : public ServiceFramework<IAdministrator> {
 public:
     explicit IAdministrator(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "IAdministrator"} {
-        // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "CheckAvailability"},
             {1, nullptr, "GetAccountId"},
             {2, nullptr, "EnsureIdTokenCacheAsync"},
             {3, nullptr, "LoadIdTokenCache"},
             {100, nullptr, "SetSystemProgramIdentification"},
-            {101, nullptr, "RefreshNotificationTokenAsync"}, // 7.0.0+
-            {110, nullptr, "GetServiceEntryRequirementCache"}, // 4.0.0+
-            {111, nullptr, "InvalidateServiceEntryRequirementCache"}, // 4.0.0+
-            {112, nullptr, "InvalidateTokenCache"}, // 4.0.0 - 6.2.0
-            {113, nullptr, "GetServiceEntryRequirementCacheForOnlinePlay"}, // 6.1.0+
+            {101, nullptr, "RefreshNotificationTokenAsync"},
+            {110, nullptr, "GetServiceEntryRequirementCache"},
+            {111, nullptr, "InvalidateServiceEntryRequirementCache"},
+            {112, nullptr, "InvalidateTokenCache"},
+            {113, nullptr, "GetServiceEntryRequirementCacheForOnlinePlay"},
             {120, nullptr, "GetNintendoAccountId"},
-            {121, nullptr, "CalculateNintendoAccountAuthenticationFingerprint"}, // 9.0.0+
+            {121, nullptr, "CalculateNintendoAccountAuthenticationFingerprint"},
             {130, nullptr, "GetNintendoAccountUserResourceCache"},
             {131, nullptr, "RefreshNintendoAccountUserResourceCacheAsync"},
             {132, nullptr, "RefreshNintendoAccountUserResourceCacheAsyncIfSecondsElapsed"},
-            {133, nullptr, "GetNintendoAccountVerificationUrlCache"}, // 9.0.0+
-            {134, nullptr, "RefreshNintendoAccountVerificationUrlCacheAsync"}, // 9.0.0+
-            {135, nullptr, "RefreshNintendoAccountVerificationUrlCacheAsyncIfSecondsElapsed"}, // 9.0.0+
-            {140, nullptr, "GetNetworkServiceLicenseCache"}, // 5.0.0+
-            {141, nullptr, "RefreshNetworkServiceLicenseCacheAsync"}, // 5.0.0+
-            {142, nullptr, "RefreshNetworkServiceLicenseCacheAsyncIfSecondsElapsed"}, // 5.0.0+
+            {133, nullptr, "GetNintendoAccountVerificationUrlCache"},
+            {134, nullptr, "RefreshNintendoAccountVerificationUrlCacheAsync"},
+            {135, nullptr, "RefreshNintendoAccountVerificationUrlCacheAsyncIfSecondsElapsed"},
+            {140, nullptr, "GetNetworkServiceLicenseCache"},
+            {141, nullptr, "RefreshNetworkServiceLicenseCacheAsync"},
+            {142, nullptr, "RefreshNetworkServiceLicenseCacheAsyncIfSecondsElapsed"},
             {143, nullptr, "GetNetworkServiceLicenseCacheEx"},
             {150, nullptr, "CreateAuthorizationRequest"},
             {160, nullptr, "RequiresUpdateNetworkServiceAccountIdTokenCache"},
@@ -192,19 +211,18 @@ public:
             {252, nullptr, "ResumeProcedureToLinkWithNintendoAccount"},
             {255, nullptr, "CreateProcedureToUpdateLinkageStateOfNintendoAccount"},
             {256, nullptr, "ResumeProcedureToUpdateLinkageStateOfNintendoAccount"},
-            {260, nullptr, "CreateProcedureToLinkNnidWithNintendoAccount"}, // 3.0.0+
-            {261, nullptr, "ResumeProcedureToLinkNnidWithNintendoAccount"}, // 3.0.0+
+            {260, nullptr, "CreateProcedureToLinkNnidWithNintendoAccount"},
+            {261, nullptr, "ResumeProcedureToLinkNnidWithNintendoAccount"},
             {280, nullptr, "ProxyProcedureToAcquireApplicationAuthorizationForNintendoAccount"},
-            {290, nullptr, "GetRequestForNintendoAccountUserResourceView"}, // 8.0.0+
-            {300, nullptr, "TryRecoverNintendoAccountUserStateAsync"}, // 6.0.0+
-            {400, nullptr, "IsServiceEntryRequirementCacheRefreshRequiredForOnlinePlay"}, // 6.1.0+
-            {401, nullptr, "RefreshServiceEntryRequirementCacheForOnlinePlayAsync"}, // 6.1.0+
-            {900, nullptr, "GetAuthenticationInfoForWin"}, // 9.0.0+
-            {901, nullptr, "ImportAsyncForWin"}, // 9.0.0+
+            {290, nullptr, "GetRequestForNintendoAccountUserResourceView"},
+            {300, nullptr, "TryRecoverNintendoAccountUserStateAsync"},
+            {400, nullptr, "IsServiceEntryRequirementCacheRefreshRequiredForOnlinePlay"},
+            {401, nullptr, "RefreshServiceEntryRequirementCacheForOnlinePlayAsync"},
+            {900, nullptr, "GetAuthenticationInfoForWin"},
+            {901, nullptr, "ImportAsyncForWin"},
             {997, nullptr, "DebugUnlinkNintendoAccountAsync"},
             {998, nullptr, "DebugSetAvailabilityErrorDetail"},
         };
-        // clang-format on
 
         RegisterHandlers(functions);
     }
@@ -214,7 +232,6 @@ class IAuthorizationRequest final : public ServiceFramework<IAuthorizationReques
 public:
     explicit IAuthorizationRequest(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "IAuthorizationRequest"} {
-        // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "GetSessionId"},
             {10, nullptr, "InvokeWithoutInteractionAsync"},
@@ -223,7 +240,6 @@ public:
             {21, nullptr, "GetIdToken"},
             {22, nullptr, "GetState"},
         };
-        // clang-format on
 
         RegisterHandlers(functions);
     }
@@ -233,7 +249,6 @@ class IOAuthProcedure final : public ServiceFramework<IOAuthProcedure> {
 public:
     explicit IOAuthProcedure(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "IOAuthProcedure"} {
-        // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "PrepareAsync"},
             {1, nullptr, "GetRequest"},
@@ -241,7 +256,6 @@ public:
             {3, nullptr, "ApplyResponseAsync"},
             {10, nullptr, "Suspend"},
         };
-        // clang-format on
 
         RegisterHandlers(functions);
     }
@@ -252,7 +266,6 @@ class IOAuthProcedureForExternalNsa final : public ServiceFramework<IOAuthProced
 public:
     explicit IOAuthProcedureForExternalNsa(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "IOAuthProcedureForExternalNsa"} {
-        // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "PrepareAsync"},
             {1, nullptr, "GetRequest"},
@@ -264,7 +277,6 @@ public:
             {102, nullptr, "GetNickname"},
             {103, nullptr, "GetProfileImage"},
         };
-        // clang-format on
 
         RegisterHandlers(functions);
     }
@@ -275,7 +287,6 @@ class IOAuthProcedureForNintendoAccountLinkage final
 public:
     explicit IOAuthProcedureForNintendoAccountLinkage(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "IOAuthProcedureForNintendoAccountLinkage"} {
-        // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "PrepareAsync"},
             {1, nullptr, "GetRequest"},
@@ -284,10 +295,9 @@ public:
             {10, nullptr, "Suspend"},
             {100, nullptr, "GetRequestWithTheme"},
             {101, nullptr, "IsNetworkServiceAccountReplaced"},
-            {199, nullptr, "GetUrlForIntroductionOfExtraMembership"}, // 2.0.0 - 5.1.0
+            {199, nullptr, "GetUrlForIntroductionOfExtraMembership"},
             {200, nullptr, "ApplyAsyncWithAuthorizedToken"},
         };
-        // clang-format on
 
         RegisterHandlers(functions);
     }
@@ -297,11 +307,9 @@ class INotifier final : public ServiceFramework<INotifier> {
 public:
     explicit INotifier(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "INotifier"} {
-        // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "GetSystemEvent"},
         };
-        // clang-format on
 
         RegisterHandlers(functions);
     }
@@ -317,6 +325,9 @@ public:
             {1, &IProfileCommon::GetBase, "GetBase"},
             {10, &IProfileCommon::GetImageSize, "GetImageSize"},
             {11, &IProfileCommon::LoadImage, "LoadImage"},
+            {20, D<&IProfileCommon::IsLinkedWithNintendoAccount>, "IsLinkedWithNintendoAccount"},
+            {21, D<&IProfileCommon::GetNintendoAccountUserResourceCache>, "GetNintendoAccountUserResourceCache"},
+            {30, D<&IProfileCommon::GetNintendoAccountId>, "GetNintendoAccountId"}
         };
 
         RegisterHandlers(functions);
@@ -325,6 +336,7 @@ public:
             static const FunctionInfo editor_functions[] = {
                 {100, &IProfileCommon::Store, "Store"},
                 {101, &IProfileCommon::StoreWithImage, "StoreWithImage"},
+                {110, D<&IProfileCommon::StoreSaveDataThumbnailApplication>, "StoreSaveDataThumbnailApplication"}
             };
 
             RegisterHandlers(editor_functions);
@@ -486,6 +498,42 @@ protected:
         rb.Push(ResultSuccess);
     }
 
+    void GetNintendoAccountId(HLERequestContext& ctx) {
+        LOG_DEBUG(Service_ACC, "(STUBBED) called");
+
+        // Returns a u64 Nintendo Account ID
+        IPC::ResponseBuilder rb{ctx, 4};
+        rb.Push(ResultSuccess);
+        rb.Push<u64>(0); // Nintendo Account ID stub
+    }
+
+    void GetNintendoAccountUserResourceCache(HLERequestContext& ctx) {
+        LOG_DEBUG(Service_ACC, "(STUBBED) called");
+
+        // Takes buffer of type 0x6 (out buffer) for NintendoAccountUserResourceCache
+        IPC::ResponseBuilder rb{ctx, 2};
+        rb.Push(ResultSuccess);
+    }
+
+    void IsLinkedWithNintendoAccount(HLERequestContext& ctx) {
+        LOG_DEBUG(Service_ACC, "(STUBBED) called");
+
+        // Returns bool IsLinked and u64 NintendoAccountId
+        IPC::ResponseBuilder rb{ctx, 4};
+        rb.Push(ResultSuccess);
+        rb.Push<u64>(0); // Not linked
+    }
+
+    void StoreSaveDataThumbnailApplication(HLERequestContext& ctx) {
+        LOG_DEBUG(Service_ACC, "(STUBBED) called");
+
+        // Takes ApplicationId (u64) and two buffers:
+        // Buffer[0x19] = Thumbnail data
+        // Buffer[0x5] = Unknown data
+        IPC::ResponseBuilder rb{ctx, 2};
+        rb.Push(ResultSuccess);
+    }
+
     ProfileManager& profile_manager;
     Common::UUID user_id{}; ///< The user id this profile refers to.
 };
@@ -508,11 +556,9 @@ class ISessionObject final : public ServiceFramework<ISessionObject> {
 public:
     explicit ISessionObject(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "ISessionObject"} {
-        // clang-format off
         static const FunctionInfo functions[] = {
             {999, nullptr, "Dummy"},
         };
-        // clang-format on
 
         RegisterHandlers(functions);
     }
@@ -522,7 +568,6 @@ class IGuestLoginRequest final : public ServiceFramework<IGuestLoginRequest> {
 public:
     explicit IGuestLoginRequest(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "IGuestLoginRequest"} {
-        // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "GetSessionId"},
             {11, nullptr, "Unknown"}, // 1.0.0 - 2.3.0 (the name is blank on Switchbrew)
@@ -532,7 +577,6 @@ public:
             {15, nullptr, "GetProfileImage"},
             {21, nullptr, "LoadIdTokenCache"}, // 3.0.0+
         };
-        // clang-format on
 
         RegisterHandlers(functions);
     }
@@ -572,7 +616,6 @@ public:
         : ServiceFramework{system_, "IManagerForApplication"},
           ensure_token_id{std::make_shared<EnsureTokenIdCacheAsyncInterface>(system)},
           profile_manager{profile_manager_} {
-        // clang-format off
         static const FunctionInfo functions[] = {
             {0, &IManagerForApplication::CheckAvailability, "CheckAvailability"},
             {1, &IManagerForApplication::GetAccountId, "GetAccountId"},
@@ -583,7 +626,6 @@ public:
             {160, &IManagerForApplication::StoreOpenContext, "StoreOpenContext"},
             {170, nullptr, "LoadNetworkServiceLicenseKindAsync"},
         };
-        // clang-format on
 
         RegisterHandlers(functions);
     }
@@ -653,7 +695,6 @@ class IAsyncNetworkServiceLicenseKindContext final
 public:
     explicit IAsyncNetworkServiceLicenseKindContext(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "IAsyncNetworkServiceLicenseKindContext"} {
-        // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "GetSystemEvent"},
             {1, nullptr, "Cancel"},
@@ -661,7 +702,6 @@ public:
             {3, nullptr, "GetResult"},
             {4, nullptr, "GetNetworkServiceLicenseKind"},
         };
-        // clang-format on
 
         RegisterHandlers(functions);
     }
@@ -673,7 +713,6 @@ class IOAuthProcedureForUserRegistration final
 public:
     explicit IOAuthProcedureForUserRegistration(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "IOAuthProcedureForUserRegistration"} {
-        // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "PrepareAsync"},
             {1, nullptr, "GetRequest"},
@@ -687,7 +726,6 @@ public:
             {110, nullptr, "RegisterUserAsync"},
             {111, nullptr, "GetUid"},
         };
-        // clang-format on
 
         RegisterHandlers(functions);
     }
@@ -696,7 +734,6 @@ public:
 class DAUTH_O final : public ServiceFramework<DAUTH_O> {
 public:
     explicit DAUTH_O(Core::System& system_, Common::UUID) : ServiceFramework{system_, "dauth:o"} {
-        // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "EnsureAuthenticationTokenCacheAsync"},
             {1, nullptr, "LoadAuthenticationTokenCache"},
@@ -712,7 +749,6 @@ public:
             {23, nullptr, "IsApplicationAuthenticationCacheAvailable"},
             {24, nullptr, "InvalidateApplicationAuthenticationCache"},
         };
-        // clang-format on
 
         RegisterHandlers(functions);
     }
@@ -723,14 +759,12 @@ class IAsyncResult final : public ServiceFramework<IAsyncResult> {
 public:
     explicit IAsyncResult(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "IAsyncResult"} {
-        // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "GetResult"},
             {1, nullptr, "Cancel"},
             {2, nullptr, "IsAvailable"},
             {3, nullptr, "GetSystemEvent"},
         };
-        // clang-format on
 
         RegisterHandlers(functions);
     }
@@ -821,7 +855,7 @@ Result Module::Interface::InitializeApplicationInfoBase() {
     const auto result = system.GetARPManager().GetLaunchProperty(
         &launch_property, system.GetApplicationProcessProgramID());
 
-    if (result != ResultSuccess) {
+    if (result != Loader::ResultStatus::Success) {
         LOG_ERROR(Service_ACC, "Failed to get launch property");
         return Account::ResultInvalidApplication;
     }
@@ -943,16 +977,13 @@ void Module::Interface::ListOpenContextStoredUsers(HLERequestContext& ctx) {
 }
 
 void Module::Interface::StoreSaveDataThumbnailApplication(HLERequestContext& ctx) {
-    IPC::RequestParser rp{ctx};
-    const auto uuid = rp.PopRaw<Common::UUID>();
+    LOG_DEBUG(Service_ACC, "(STUBBED) called");
 
-    LOG_WARNING(Service_ACC, "(STUBBED) called, uuid=0x{}", uuid.RawString());
-
-    // TODO(ogniK): Check if application ID is zero on acc initialize. As we don't have a reliable
-    // way of confirming things like the TID, we're going to assume a non zero value for the time
-    // being.
-    constexpr u64 tid{1};
-    StoreSaveDataThumbnail(ctx, uuid, tid);
+    // Takes ApplicationId (u64) and two buffers:
+    // Buffer[0x19] = Thumbnail data
+    // Buffer[0x5] = Unknown data
+    IPC::ResponseBuilder rb{ctx, 2};
+    rb.Push(ResultSuccess);
 }
 
 void Module::Interface::GetBaasAccountManagerForSystemService(HLERequestContext& ctx) {
@@ -1002,6 +1033,29 @@ void Module::Interface::StoreSaveDataThumbnail(HLERequestContext& ctx, const Com
     rb.Push(ResultSuccess);
 }
 
+void Module::Interface::TrySelectUserWithoutInteractionDeprecated(HLERequestContext& ctx) {
+    LOG_DEBUG(Service_ACC, "called");
+    // A u8 is passed into this function which we can safely ignore. It's to determine if we have
+    // access to use the network or not by the looks of it
+    IPC::ResponseBuilder rb{ctx, 6};
+    if (profile_manager->GetUserCount() != 1) {
+        rb.Push(ResultSuccess);
+        rb.PushRaw(Common::InvalidUUID);
+        return;
+    }
+
+    const auto user_list = profile_manager->GetAllUsers();
+    if (std::ranges::all_of(user_list, [](const auto& user) { return user.IsInvalid(); })) {
+        rb.Push(ResultUnknown); // TODO(ogniK): Find the correct error code
+        rb.PushRaw(Common::InvalidUUID);
+        return;
+    }
+
+    // Select the first user we have
+    rb.Push(ResultSuccess);
+    rb.PushRaw(profile_manager->GetUser(0)->uuid);
+}
+
 void Module::Interface::TrySelectUserWithoutInteraction(HLERequestContext& ctx) {
     LOG_DEBUG(Service_ACC, "called");
     // A u8 is passed into this function which we can safely ignore. It's to determine if we have
@@ -1028,8 +1082,8 @@ void Module::Interface::TrySelectUserWithoutInteraction(HLERequestContext& ctx) 
 Module::Interface::Interface(std::shared_ptr<Module> module_,
                              std::shared_ptr<ProfileManager> profile_manager_,
                              Core::System& system_, const char* name)
-    : ServiceFramework{system_, name}, module{std::move(module_)}, profile_manager{std::move(
-                                                                       profile_manager_)} {}
+    : ServiceFramework{system_, name}, module{std::move(module_)},
+      profile_manager{std::move(profile_manager_)} {}
 
 Module::Interface::~Interface() = default;
 
