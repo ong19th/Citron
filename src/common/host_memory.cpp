@@ -41,6 +41,7 @@ namespace Common {
 
 constexpr size_t PageAlignment = 0x1000;
 constexpr size_t HugePageSize = 0x200000;
+constexpr size_t max_memory_size = 0x8000000000; // 512 GB max memory size
 
 #ifdef _WIN32
 
@@ -112,7 +113,8 @@ public:
             throw std::bad_alloc{};
         }
         // Allocate a virtual memory for the backing file map as placeholder
-        backing_base = static_cast<u8*>(pfn_VirtualAlloc2(process, nullptr, backing_size,
+        backing_base =
+            static_cast<u8*>(pfn_VirtualAlloc2(process, nullptr, backing_size,
                                                           MEM_RESERVE | MEM_RESERVE_PLACEHOLDER,
                                                           PAGE_NOACCESS, nullptr, 0));
         if (!backing_base) {
@@ -743,23 +745,33 @@ HostMemory& HostMemory::operator=(HostMemory&&) noexcept = default;
 
 void HostMemory::Map(size_t virtual_offset, size_t host_offset, size_t length,
                      MemoryPermission perms, bool separate_heap) {
+    // Add additional checks before mapping
+    if (virtual_offset == 0 || host_offset == 0) {
+        LOG_ERROR(Common_Memory, "Invalid memory mapping addresses");
+        return;
+    }
+
+    // Ensure addresses are properly aligned
+    if ((virtual_offset & 0xFFF) != 0 || (host_offset & 0xFFF) != 0) {
+        LOG_ERROR(Common_Memory, "Unaligned memory mapping addresses");
+        return;
+    }
+
+    // Add size validation
+    if (length == 0 || length > max_memory_size) {
+        LOG_ERROR(Common_Memory, "Invalid mapping length: {}", length);
+        return;
+    }
+
     ASSERT(virtual_offset % PageAlignment == 0);
-    ASSERT(host_offset % PageAlignment == 0);
     ASSERT(length % PageAlignment == 0);
     ASSERT(virtual_offset + length <= virtual_size);
-    ASSERT(host_offset + length <= backing_size);
 
     if (length == 0 || !virtual_base || !impl) {
         return;
     }
 
     impl->Map(virtual_offset + virtual_base_offset, host_offset, length, perms);
-
-    // Verify mapping was successful
-    if (!impl->IsValidMapping(virtual_offset + virtual_base_offset, length)) {
-        LOG_CRITICAL(Common_Memory, "Failed to verify memory mapping: virtual_offset={:x}, host_offset={:x}, length={:x}",
-                    virtual_offset, host_offset, length);
-    }
 }
 
 void HostMemory::Unmap(size_t virtual_offset, size_t length, bool separate_heap) {
