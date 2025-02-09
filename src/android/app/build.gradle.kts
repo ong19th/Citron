@@ -28,7 +28,7 @@ android {
     namespace = "org.citron.citron_emu"
     compileSdk = 35
 
-    ndkVersion = "26.3.11579264"
+    ndkVersion = "28.0.13004108" // "26.3.11579264"
 
     buildFeatures {
         viewBinding = true
@@ -36,12 +36,12 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = "21"
     }
 
     packaging {
