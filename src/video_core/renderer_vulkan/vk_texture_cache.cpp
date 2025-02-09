@@ -1490,10 +1490,10 @@ void TextureCacheRuntime::CopyImageMSAA(Image& dst, Image& src, std::span<const 
         .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
     };
 
-    const auto resolve_image = memory_allocator.CreateImage(resolve_ci);
+    const auto resolve_image_holder = memory_allocator.CreateImage(resolve_ci);
 
     scheduler.RequestOutsideRenderPassOperationContext();
-    scheduler.Record([src_image, dst_image, resolve_image = *resolve_image,
+    scheduler.Record([src_image, dst_image, resolve_image = *resolve_image_holder,
                      copies, aspect_mask](vk::CommandBuffer cmdbuf) {
         for (const auto& copy : copies) {
             const VkExtent3D extent{
