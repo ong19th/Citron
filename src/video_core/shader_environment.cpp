@@ -25,7 +25,7 @@
 
 namespace VideoCommon {
 
-constexpr std::array<char, 8> MAGIC_NUMBER{'c', 'i', 't', 'r', 'c', 'a', 'c', 'h'};
+constexpr std::array<char, 8> MAGIC_NUMBER{'y', 'u', 'z', 'u', 'c', 'a', 'c', 'h'};
 
 constexpr size_t INST_SIZE = sizeof(u64);
 
