@@ -22,7 +22,7 @@ public:
         // clang-format off
         static const FunctionInfo functions[] = {
             {0, &IFriendService::GetCompletionEvent, "GetCompletionEvent"},
-            {1, &IFriendService::Cancel, "Cancel"},
+            {1, nullptr, "Cancel"},
             {10100, nullptr, "GetFriendListIds"},
             {10101, &IFriendService::GetFriendList, "GetFriendList"},
             {10102, nullptr, "UpdateFriendInfo"},
@@ -46,7 +46,7 @@ public:
             {20101, &IFriendService::GetNewlyFriendCount, "GetNewlyFriendCount"},
             {20102, nullptr, "GetFriendDetailedInfo"},
             {20103, nullptr, "SyncFriendList"},
-            {20104, &IFriendService::RequestSyncFriendList, "RequestSyncFriendList"},
+            {20104, nullptr, "RequestSyncFriendList"},
             {20110, nullptr, "LoadFriendSetting"},
             {20200, &IFriendService::GetReceivedFriendRequestCount, "GetReceivedFriendRequestCount"},
             {20201, nullptr, "GetFriendRequestList"},
@@ -59,10 +59,10 @@ public:
             {20401, nullptr, "SyncBlockedUserList"},
             {20500, nullptr, "GetProfileExtraList"},
             {20501, nullptr, "GetRelationship"},
-            {20600, &IFriendService::GetUserPresenceView, "GetUserPresenceView"},
+            {20600, nullptr, "GetUserPresenceView"},
             {20700, nullptr, "GetPlayHistoryList"},
             {20701, &IFriendService::GetPlayHistoryStatistics, "GetPlayHistoryStatistics"},
-            {20800, &IFriendService::LoadUserSetting, "LoadUserSetting"},
+            {20800, nullptr, "LoadUserSetting"},
             {20801, nullptr, "SyncUserSetting"},
             {20900, nullptr, "RequestListSummaryOverlayNotification"},
             {21000, nullptr, "GetExternalApplicationCatalog"},
@@ -137,23 +137,11 @@ private:
     static_assert(sizeof(SizedFriendFilter) == 0x10, "SizedFriendFilter is an invalid size");
 
     void GetCompletionEvent(HLERequestContext& ctx) {
-        LOG_DEBUG(Service_Friend, "Retrieving completion event");
+        LOG_DEBUG(Service_Friend, "called");
 
-        const auto& event = completion_event->GetReadableEvent();
-
-        IPC::ResponseBuilder response{ctx, 2, 1};
-        response.Push(event.Signal());
-        response.PushCopyObjects(event);
-    }
-
-    void Cancel(HLERequestContext& ctx) {
-        LOG_DEBUG(Service_Friend, "Cancelling friend service operation");
-
-        const auto& event = completion_event->GetReadableEvent();
-
-        IPC::ResponseBuilder response{ctx, 2};
-        response.Push(ResultSuccess);
-        response.PushCopyObjects(event);
+        IPC::ResponseBuilder rb{ctx, 2, 1};
+        rb.Push(ResultSuccess);
+        rb.PushCopyObjects(completion_event->GetReadableEvent());
     }
 
     void GetFriendList(HLERequestContext& ctx) {
@@ -245,13 +233,6 @@ private:
         rb.Push(0);
     }
 
-    void RequestSyncFriendList(HLERequestContext& ctx) {
-        LOG_DEBUG(Service_Friend, "Friend list sync requested");
-
-        IPC::ResponseBuilder response{ctx, 2};
-        response.Push(ResultSuccess);
-    }
-
     void GetReceivedFriendRequestCount(HLERequestContext& ctx) {
         LOG_DEBUG(Service_Friend, "(STUBBED) called");
 
@@ -260,28 +241,11 @@ private:
         rb.Push(0);
     }
 
-    void GetUserPresenceView(HLERequestContext& ctx) {
-        IPC::RequestParser request{ctx};
-        const auto user_id = request.PopRaw<Common::UUID>();
-
-        LOG_DEBUG(Service_Friend, "Getting presence view for user {}", user_id.RawString());
-
-        IPC::ResponseBuilder response{ctx, 2};
-        response.Push(ResultSuccess);
-    }
-
     void GetPlayHistoryStatistics(HLERequestContext& ctx) {
         LOG_ERROR(Service_Friend, "(STUBBED) called, check in out");
 
         IPC::ResponseBuilder rb{ctx, 2};
         rb.Push(ResultSuccess);
-    }
-
-    void LoadUserSetting(HLERequestContext& ctx) {
-        LOG_DEBUG(Service_Friend, "Loading friend service user settings");
-
-        IPC::ResponseBuilder response{ctx, 2};
-        response.Push(ResultSuccess);
     }
 
     void GetReceivedFriendInvitationCountCache(HLERequestContext& ctx) {
