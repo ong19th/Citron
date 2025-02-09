@@ -102,6 +102,13 @@ protected:
 };
 
 class Socket : public SocketBase {
+private:
+    SOCKET fd = INVALID_SOCKET;
+    bool is_non_blocking = false;
+    Domain domain_value = Domain::Unspecified;
+    Type type_value = Type::Unspecified;
+    Protocol protocol_value = Protocol::Unspecified;
+
 public:
     Socket() = default;
     explicit Socket(SOCKET fd_) : SocketBase{fd_} {}
@@ -166,9 +173,6 @@ public:
     bool IsOpened() const override;
 
     void HandleProxyPacket(const ProxyPacket& packet) override;
-
-private:
-    bool is_non_blocking = false;
 };
 
 std::pair<s32, Errno> Poll(std::vector<PollFD>& poll_fds, s32 timeout);

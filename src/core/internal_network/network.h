@@ -124,4 +124,6 @@ u32 IPv4AddressToInteger(IPv4Address ip_addr);
 Common::Expected<std::vector<AddrInfo>, GetAddrInfoError> GetAddressInfo(
     const std::string& host, const std::optional<std::string>& service);
 
+void ForceOfflineMode();
+
 } // namespace Network

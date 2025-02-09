@@ -21,6 +21,7 @@ import org.citron.citron_emu.utils.Log
 import org.citron.citron_emu.model.InstallResult
 import org.citron.citron_emu.model.Patch
 import org.citron.citron_emu.model.GameVerificationResult
+import java.net.NetworkInterface
 
 /**
  * Class which contains methods that interact
@@ -459,4 +460,29 @@ object NativeLibrary {
      * Checks if all necessary keys are present for decryption
      */
     external fun areKeysPresent(): Boolean
+
+    fun getNetworkInterfaces(): Array<String> {
+        val interfaceList = mutableListOf<String>()
+        try {
+            NetworkInterface.getNetworkInterfaces()?.toList()?.forEach { iface ->
+                if (iface.isUp && !iface.isLoopback) {
+                    iface.inetAddresses.toList()
+                        .filterNot { it.isLoopbackAddress }
+                        .forEach { addr ->
+                            interfaceList.add("${iface.name};${addr.hostAddress}")
+                        }
+                }
+            }
+        } catch (e: Exception) {
+            Log.error("[NativeLibrary] Failed to enumerate network interfaces: ${e.message}")
+        }
+
+        // Always ensure we have at least a loopback interface
+        if (interfaceList.isEmpty()) {
+            Log.warning("[NativeLibrary] No interfaces found, adding loopback fallback")
+            interfaceList.add("lo;127.0.0.1")
+        }
+
+        return interfaceList.toTypedArray()
+    }
 }
