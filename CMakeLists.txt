@@ -327,7 +327,7 @@ find_package(ZLIB REQUIRED)
 find_package(zstd REQUIRED)
 
 if (NOT CITRON_USE_EXTERNAL_VULKAN_HEADERS)
-    find_package(VulkanHeaders 1.4.304.1 REQUIRED)
+    find_package(VulkanHeaders 1.4.307 REQUIRED)
 endif()
 
 if (NOT CITRON_USE_EXTERNAL_VULKAN_UTILITY_LIBRARIES)
@@ -422,7 +422,7 @@ endif()
 
 if (ENABLE_QT)
     if (NOT USE_SYSTEM_QT)
-        download_qt(6.7.3)
+        download_qt(6.8.2)
     endif()
 
     find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia Concurrent Network)
