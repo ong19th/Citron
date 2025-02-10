@@ -422,11 +422,7 @@ endif()
 
 if (ENABLE_QT)
     if (NOT USE_SYSTEM_QT)
-        if ((MSVC_VERSION GREATER_EQUAL 1920) AND ARCHITECTURE_x86_64)
-            download_qt(6.7.3)
-        else()
-            download_qt(6.8.2)
-        endif()
+        download_qt(6.8.2)
     endif()
 
     find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia Concurrent Network)
