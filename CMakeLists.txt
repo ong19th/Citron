@@ -390,7 +390,7 @@ if (ENABLE_SDL2)
     if (CITRON_USE_BUNDLED_SDL2)
         # Detect toolchain and platform
         if ((MSVC_VERSION GREATER_EQUAL 1920) AND ARCHITECTURE_x86_64)
-            set(SDL2_VER "SDL2-2.28.2")
+            set(SDL2_VER "SDL2-2.30.12")
         else()
             message(FATAL_ERROR "No bundled SDL2 binaries for your toolchain. Disable CITRON_USE_BUNDLED_SDL2 and provide your own.")
         endif()
