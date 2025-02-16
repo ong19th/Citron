@@ -61,7 +61,7 @@ Result IHOSBinderDriver::AdjustRefcount(s32 binder_id, s32 addval, s32 type) {
 
 Result IHOSBinderDriver::GetNativeHandle(s32 binder_id, u32 type_id,
                                          OutCopyHandle<Kernel::KReadableEvent> out_handle) {
-    LOG_WARNING(Service_VI, "(STUBBED) called id={}, type_id={}", binder_id, type_id);
+    LOG_DEBUG(Service_VI, "called id={}, type_id={}", binder_id, type_id);
 
     const auto binder = m_server->TryGetBinder(binder_id);
     R_UNLESS(binder != nullptr, ResultUnknown);
