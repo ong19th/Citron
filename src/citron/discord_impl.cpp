@@ -14,7 +14,7 @@
 
 #include <discord_rpc.h>
 
-#include <fmt/format.h>
+#include <fmt/ranges.h>
 
 #include "citron/discord_impl.h"
 

@@ -3,7 +3,7 @@
 
 #include <algorithm>
 
-#include <fmt/format.h>
+#include <fmt/ranges.h>
 
 #include "citron/compatibility_list.h"
 

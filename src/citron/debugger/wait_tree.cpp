@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <array>
-#include <fmt/format.h>
+#include <fmt/ranges.h>
 
 #include "citron/debugger/wait_tree.h"
 #include "citron/uisettings.h"
