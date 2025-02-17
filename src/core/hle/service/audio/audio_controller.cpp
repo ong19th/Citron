@@ -11,8 +11,19 @@
 namespace Service::Audio {
 
 IAudioController::IAudioController(Core::System& system_)
-    : ServiceFramework{system_, "audctl"}, service_context{system, "audctl"} {
-    // clang-format off
+    : ServiceFramework{system_, "audctl"}
+    , service_context{system, "audctl"}
+    , m_current_output_target{1}  // Initialize with default values
+    , m_current_parameter{0x1388}
+    , m_current_volume{100} {
+
+    // Create notification event first
+    notification_event = service_context.CreateEvent("IAudioController:NotificationEvent");
+
+    // Get system settings service
+    m_set_sys = system.ServiceManager().GetService<Service::Set::ISystemSettingsServer>("set:sys", true);
+
+    // Register handlers
     static const FunctionInfo functions[] = {
         {0, nullptr, "GetTargetVolume"},
         {1, nullptr, "SetTargetVolume"},
@@ -67,15 +78,15 @@ IAudioController::IAudioController(Core::System& system_)
         {10104, nullptr, "GetAudioOutputChannelCountForPlayReport"},
         {10105, nullptr, "BindAudioOutputChannelCountUpdateEventForPlayReport"},
         {10106, nullptr, "GetDefaultAudioOutputTargetForPlayReport"},
-        {50000, nullptr, "SetAnalogInputBoostGainForPrototyping"},
+        {5000, D<&IAudioController::GetSelfController>, "GetSelfController"},
+        {50001, D<&IAudioController::SetAudioControllerOutput>, "SetAudioControllerOutput"},
     };
-    // clang-format on
-
     RegisterHandlers(functions);
 
-    m_set_sys =
-        system.ServiceManager().GetService<Service::Set::ISystemSettingsServer>("set:sys", true);
-    notification_event = service_context.CreateEvent("IAudioController:NotificationEvent");
+    // Signal initial state
+    if (notification_event) {
+        notification_event->Signal();
+    }
 }
 
 IAudioController::~IAudioController() {
@@ -173,6 +184,36 @@ Result IAudioController::AcquireTargetNotification(
     LOG_WARNING(Service_Audio, "(STUBBED) called");
 
     *out_notification_event = &notification_event->GetReadableEvent();
+    R_SUCCEED();
+}
+
+Result IAudioController::SetAudioControllerOutput(u32 output_target, u32 parameter, u32 volume) {
+    LOG_DEBUG(Audio, "called. output_target={}, parameter={}, volume={}", output_target, parameter, volume);
+
+    if (!notification_event) {
+        LOG_ERROR(Audio, "Notification event not initialized");
+        R_THROW(ResultCode::ResultInvalidState);
+    }
+
+    m_current_output_target = output_target;
+    m_current_parameter = parameter;
+    m_current_volume = volume;
+
+    notification_event->Signal();
+    R_SUCCEED();
+}
+
+Result IAudioController::GetSelfController(Out<SharedPointer<IAudioController>> out_controller) {
+    LOG_DEBUG(Audio, "called");
+
+    // Use ServiceFramework's built-in method to get a shared pointer
+    *out_controller = SharedPointer<IAudioController>(this);
+
+    // Signal notification event since we're returning a new interface
+    if (notification_event) {
+        notification_event->Signal();
+    }
+
     R_SUCCEED();
 }
 

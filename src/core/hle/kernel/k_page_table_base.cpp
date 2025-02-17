@@ -172,6 +172,7 @@ Result KPageTableBase::InitializeForKernel(bool is_64_bit, KVirtualAddress start
     m_mapped_unsafe_physical_memory = 0;
     m_mapped_insecure_memory = 0;
     m_mapped_ipc_server_memory = 0;
+    m_alias_region_extra_size = 0;
 
     m_memory_block_slab_manager =
         m_kernel.GetSystemSystemResource().GetMemoryBlockSlabManagerPointer();

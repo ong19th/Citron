@@ -472,6 +472,10 @@ public:
     const KPageTable& GetBasePageTable() const {
         return m_page_table;
     }
+
+    size_t GetReservedRegionExtraSize() const {
+        return m_page_table.GetReservedRegionExtraSize();
+    }
 };
 
 } // namespace Kernel

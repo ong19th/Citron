@@ -4,6 +4,7 @@
 #include "core/core.h"
 #include "core/hle/service/am/applet_manager.h"
 #include "core/hle/service/am/service/all_system_applet_proxies_service.h"
+#include "core/hle/service/am/service/global_state_controller.h"
 #include "core/hle/service/am/service/library_applet_proxy.h"
 #include "core/hle/service/am/service/system_applet_proxy.h"
 #include "core/hle/service/am/window_system.h"
@@ -23,6 +24,7 @@ IAllSystemAppletProxiesService::IAllSystemAppletProxiesService(Core::System& sys
         {350, nullptr, "OpenSystemApplicationProxy"},
         {400, nullptr, "CreateSelfLibraryAppletCreatorForDevelop"},
         {410, nullptr, "GetSystemAppletControllerForDebug"},
+        {450, D<&IAllSystemAppletProxiesService::GetGlobalStateController>, "GetGlobalStateController"},
         {1000, nullptr, "GetDebugFunctions"},
     };
     // clang-format on
@@ -71,6 +73,13 @@ Result IAllSystemAppletProxiesService::OpenLibraryAppletProxyOld(
     AppletAttribute attribute{};
     R_RETURN(
         this->OpenLibraryAppletProxy(out_library_applet_proxy, pid, process_handle, attribute));
+}
+
+Result IAllSystemAppletProxiesService::GetGlobalStateController(
+    Out<SharedPointer<IGlobalStateController>> out_controller) {
+    LOG_DEBUG(Service_AM, "called");
+    *out_controller = std::make_shared<IGlobalStateController>(this->system);
+    R_SUCCEED();
 }
 
 std::shared_ptr<Applet> IAllSystemAppletProxiesService::GetAppletFromProcessId(

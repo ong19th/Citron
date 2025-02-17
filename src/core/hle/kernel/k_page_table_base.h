@@ -208,6 +208,7 @@ private:
     size_t m_mapped_unsafe_physical_memory{};
     size_t m_mapped_insecure_memory{};
     size_t m_mapped_ipc_server_memory{};
+    size_t m_alias_region_extra_size{};
     mutable KLightLock m_general_lock;
     mutable KLightLock m_map_physical_memory_lock;
     KLightLock m_device_map_lock;
@@ -713,6 +714,10 @@ public:
 
     u32 GetAddressSpaceWidth() const {
         return m_address_space_width;
+    }
+
+    size_t GetReservedRegionExtraSize() const {
+        return m_alias_region_extra_size;
     }
 
 public:

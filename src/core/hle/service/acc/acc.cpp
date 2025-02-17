@@ -317,6 +317,10 @@ public:
             {1, &IProfileCommon::GetBase, "GetBase"},
             {10, &IProfileCommon::GetImageSize, "GetImageSize"},
             {11, &IProfileCommon::LoadImage, "LoadImage"},
+            {20, &IProfileCommon::GetImageSize, "GetLargeImageSize"},
+            {21, &IProfileCommon::LoadImage, "LoadLargeImage"},
+            {30, &IProfileCommon::Unknown, "GetImageId"},
+            {40, &IProfileCommon::GetStableUserId, "GetStableUserId"},
         };
 
         RegisterHandlers(functions);
@@ -486,6 +490,20 @@ protected:
         rb.Push(ResultSuccess);
     }
 
+    void Unknown(HLERequestContext& ctx) {
+        LOG_WARNING(Service_ACC, "(STUBBED) called");
+        IPC::ResponseBuilder rb{ctx, 3};
+        rb.Push(ResultSuccess);
+        rb.Push(0);
+    }
+
+    void GetStableUserId(HLERequestContext& ctx) {
+        LOG_DEBUG(Service_ACC, "called");
+        IPC::ResponseBuilder rb{ctx, 3};
+        rb.Push(ResultSuccess);
+        rb.Push(user_id.Hash());
+    }
+
     ProfileManager& profile_manager;
     Common::UUID user_id{}; ///< The user id this profile refers to.
 };
@@ -500,8 +518,13 @@ public:
 class IProfileEditor final : public IProfileCommon {
 public:
     explicit IProfileEditor(Core::System& system_, Common::UUID user_id_,
-                            ProfileManager& profile_manager_)
-        : IProfileCommon{system_, "IProfileEditor", true, user_id_, profile_manager_} {}
+                          ProfileManager& profile_manager_)
+        : IProfileCommon{system_, "IProfileEditor", true, user_id_, profile_manager_} {
+        static const FunctionInfo functions[] = {
+            {30, &IProfileEditor::Unknown, "Unknown"},
+        };
+        RegisterHandlers(functions);
+    }
 };
 
 class ISessionObject final : public ServiceFramework<ISessionObject> {
