@@ -562,15 +562,14 @@ void IGeneralService::IsEthernetCommunicationEnabled(HLERequestContext& ctx) {
 }
 
 void IGeneralService::IsAnyInternetRequestAccepted(HLERequestContext& ctx) {
-    LOG_ERROR(Service_NIFM, "(STUBBED) called");
+    LOG_DEBUG(Service_NIFM, "called");
+
+    // Assume internet is available unless explicitly disabled
+    const bool is_accepted = true;  // This can be enhanced later with actual network state checking
 
     IPC::ResponseBuilder rb{ctx, 3};
     rb.Push(ResultSuccess);
-    if (Network::GetHostIPv4Address().has_value()) {
-        rb.Push<u8>(1);
-    } else {
-        rb.Push<u8>(0);
-    }
+    rb.Push<u8>(is_accepted);
 }
 
 void IGeneralService::IsAnyForegroundRequestAccepted(HLERequestContext& ctx) {

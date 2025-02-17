@@ -212,6 +212,10 @@ std::optional<NetworkInterface> GetSelectedNetworkInterface() {
         return std::nullopt;
     }
 
+    if (selected_network_interface == "None" || selected_network_interface.empty()) {
+        return std::nullopt;  // Return empty/default interface
+    }
+
     const auto res =
         std::ranges::find_if(network_interfaces, [&selected_network_interface](const auto& iface) {
             return iface.name == selected_network_interface;

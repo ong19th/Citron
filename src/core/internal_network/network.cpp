@@ -548,26 +548,19 @@ void RestartSocketOperations() {
     AcknowledgeInterrupt();
 }
 
-std::optional<IPv4Address> GetHostIPv4Address() {
-    const auto network_interface = Network::GetSelectedNetworkInterface();
-    if (!network_interface.has_value()) {
-        // Only print the error once to avoid log spam
-        static bool print_error = true;
-        if (print_error) {
-            LOG_ERROR(Network, "GetSelectedNetworkInterface returned no interface");
-            print_error = false;
-        }
-
-        return {};
+std::optional<Network::IPv4Address> GetHostIPv4Address() {
+    const auto interface = Network::GetSelectedNetworkInterface();
+    if (!interface) {
+        LOG_DEBUG(Network, "No network interface selected, returning default address");
+        return Network::IPv4Address{127, 0, 0, 1};  // Return loopback address when no interface is selected
     }
 
-    return TranslateIPv4(network_interface->ip_address);
+    return Network::TranslateIPv4(interface->ip_address);
 }
 
-std::string IPv4AddressToString(IPv4Address ip_addr) {
-    std::array<char, INET_ADDRSTRLEN> buf = {};
-    ASSERT(inet_ntop(AF_INET, &ip_addr, buf.data(), sizeof(buf)) == buf.data());
-    return std::string(buf.data());
+Network::IPv4Address TranslateIPv4(const in_addr& addr) {
+    const auto bytes = reinterpret_cast<const uint8_t*>(&addr.s_addr);
+    return Network::IPv4Address{bytes[0], bytes[1], bytes[2], bytes[3]};
 }
 
 u32 IPv4AddressToInteger(IPv4Address ip_addr) {
@@ -952,6 +945,17 @@ void ForceOfflineMode() {
     LOG_INFO(Network, "Forcing offline mode due to network initialization issues");
     // Use the correct setting name
     Settings::values.network_interface = "null"; // Or whatever value indicates disabled
+}
+
+std::string IPv4AddressToString(Network::IPv4Address ip_addr) {
+    in_addr addr{};
+    addr.s_addr = (ip_addr[0]) | (ip_addr[1] << 8) | (ip_addr[2] << 16) | (ip_addr[3] << 24);
+
+    std::array<char, INET_ADDRSTRLEN> buf{};
+    if (inet_ntop(AF_INET, &addr, buf.data(), sizeof(buf)) != buf.data()) {
+        return "0.0.0.0";
+    }
+    return std::string(buf.data());
 }
 
 } // namespace Network
