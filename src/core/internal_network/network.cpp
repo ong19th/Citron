@@ -558,11 +558,6 @@ std::optional<Network::IPv4Address> GetHostIPv4Address() {
     return Network::TranslateIPv4(interface->ip_address);
 }
 
-Network::IPv4Address TranslateIPv4(const in_addr& addr) {
-    const auto bytes = reinterpret_cast<const uint8_t*>(&addr.s_addr);
-    return Network::IPv4Address{bytes[0], bytes[1], bytes[2], bytes[3]};
-}
-
 u32 IPv4AddressToInteger(IPv4Address ip_addr) {
     return static_cast<u32>(ip_addr[0]) << 24 | static_cast<u32>(ip_addr[1]) << 16 |
            static_cast<u32>(ip_addr[2]) << 8 | static_cast<u32>(ip_addr[3]);
