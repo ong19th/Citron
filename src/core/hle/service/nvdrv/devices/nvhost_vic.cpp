@@ -7,6 +7,7 @@
 #include "core/hle/service/nvdrv/core/container.h"
 #include "core/hle/service/nvdrv/devices/ioctl_serialization.h"
 #include "core/hle/service/nvdrv/devices/nvhost_vic.h"
+#include "video_core/host1x/host1x.h"
 #include "video_core/renderer_base.h"
 
 namespace Service::Nvidia::Devices {

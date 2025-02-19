@@ -77,7 +77,7 @@ IParentalControlService::IParentalControlService(Core::System& system_, Capabili
         {1451, D<&IParentalControlService::StartPlayTimer>, "StartPlayTimer"},
         {1452, D<&IParentalControlService::StopPlayTimer>, "StopPlayTimer"},
         {1453, D<&IParentalControlService::IsPlayTimerEnabled>, "IsPlayTimerEnabled"},
-        {1454, nullptr, "GetPlayTimerRemainingTime"},
+        {1454, D<&IParentalControlService::GetPlayTimerRemainingTime>, "GetPlayTimerRemainingTime"},
         {1455, D<&IParentalControlService::IsRestrictedByPlayTimer>, "IsRestrictedByPlayTimer"},
         {1456, D<&IParentalControlService::GetPlayTimerSettings>, "GetPlayTimerSettings"},
         {1457, D<&IParentalControlService::GetPlayTimerEventToRequestSuspension>, "GetPlayTimerEventToRequestSuspension"},
@@ -117,6 +117,7 @@ IParentalControlService::IParentalControlService(Core::System& system_, Capabili
         {2014, nullptr, "FinishSynchronizeParentalControlSettings"},
         {2015, nullptr, "FinishSynchronizeParentalControlSettingsWithLastUpdated"},
         {2016, nullptr, "RequestUpdateExemptionListAsync"},
+        {145601, D<&IParentalControlService::GetSelfController>, "GetSelfController"},
     };
     // clang-format on
     RegisterHandlers(functions);
@@ -427,6 +428,24 @@ Result IParentalControlService::ResetConfirmedStereoVisionPermission() {
     LOG_DEBUG(Service_PCTL, "called");
 
     states.stereo_vision = false;
+
+    R_SUCCEED();
+}
+
+Result IParentalControlService::GetSelfController(Out<SharedPointer<IParentalControlService>> out_controller) {
+    LOG_DEBUG(Service_PCTL, "called");
+
+    // Return a shared pointer to this service instance
+    *out_controller = SharedPointer<IParentalControlService>(this);
+
+    R_SUCCEED();
+}
+
+Result IParentalControlService::GetPlayTimerRemainingTime(Out<s32> out_remaining_time) {
+    LOG_DEBUG(Service_PCTL, "called");
+
+    // For now, return maximum time remaining since play timer is stubbed
+    *out_remaining_time = std::numeric_limits<s32>::max();
 
     R_SUCCEED();
 }

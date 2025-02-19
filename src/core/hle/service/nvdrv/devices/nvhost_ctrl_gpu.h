@@ -200,14 +200,19 @@ private:
     };
     static_assert(sizeof(IoctlGetGpuTime) == 0x10, "IoctlGetGpuTime is incorrect size");
 
+    struct IoctlNumVsms {
+        u32_le num_vsms;    // Output: number of SM units
+        u32_le reserved;    // Output: reserved/padding
+    };
+    static_assert(sizeof(IoctlNumVsms) == 8, "IoctlNumVsms is incorrect size");
+
     NvResult GetCharacteristics1(IoctlCharacteristics& params);
     NvResult GetCharacteristics3(IoctlCharacteristics& params,
                                  std::span<IoctlGpuCharacteristics> gpu_characteristics);
 
     NvResult GetTPCMasks1(IoctlGpuGetTpcMasksArgs& params);
-    NvResult GetTPCMasks3(IoctlGpuGetTpcMasksArgs& params, std::span<u32> tpc_mask);
-
     NvResult GetTpcMasks2(IoctlGetTpcMasks& params);
+    NvResult GetTPCMasks3(IoctlGpuGetTpcMasksArgs& params, std::span<u32> tpc_mask);
 
     NvResult GetActiveSlotMask(IoctlActiveSlotMask& params);
     NvResult ZCullGetCtxSize(IoctlZcullGetCtxSize& params);

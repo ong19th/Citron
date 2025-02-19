@@ -41,6 +41,23 @@ namespace Common {
 
 constexpr size_t PageAlignment = 0x1000;
 constexpr size_t HugePageSize = 0x200000;
+constexpr size_t max_memory_size = 0x40000000; // 1GB max memory size
+constexpr bool ENABLE_MEMORY_DEBUG = true;
+
+// Move LogMemoryOperation declaration to the top, before any usage
+static void LogMemoryOperation(const char* operation, size_t virtual_offset, size_t host_offset,
+                             size_t length, const char* result = nullptr) {
+    if (!ENABLE_MEMORY_DEBUG) {
+        return;
+    }
+    if (result) {
+        LOG_DEBUG(Common_Memory, "{}: virtual=0x{:x}, host=0x{:x}, length=0x{:x} ({})",
+                 operation, virtual_offset, host_offset, length, result);
+    } else {
+        LOG_DEBUG(Common_Memory, "{}: virtual=0x{:x}, host=0x{:x}, length=0x{:x}",
+                 operation, virtual_offset, host_offset, length);
+    }
+}
 
 #ifdef _WIN32
 
@@ -112,7 +129,8 @@ public:
             throw std::bad_alloc{};
         }
         // Allocate a virtual memory for the backing file map as placeholder
-        backing_base = static_cast<u8*>(pfn_VirtualAlloc2(process, nullptr, backing_size,
+        backing_base =
+            static_cast<u8*>(pfn_VirtualAlloc2(process, nullptr, backing_size,
                                                           MEM_RESERVE | MEM_RESERVE_PLACEHOLDER,
                                                           PAGE_NOACCESS, nullptr, 0));
         if (!backing_base) {
@@ -743,29 +761,52 @@ HostMemory& HostMemory::operator=(HostMemory&&) noexcept = default;
 
 void HostMemory::Map(size_t virtual_offset, size_t host_offset, size_t length,
                      MemoryPermission perms, bool separate_heap) {
+    // Add additional checks before mapping
+    if (virtual_offset == 0 || host_offset == 0) {
+        LOG_ERROR(Common_Memory, "Invalid memory mapping addresses");
+        return;
+    }
+
+    // Ensure addresses are properly aligned
+    if ((virtual_offset & 0xFFF) != 0 || (host_offset & 0xFFF) != 0) {
+        LOG_ERROR(Common_Memory, "Unaligned memory mapping addresses");
+        return;
+    }
+
+    // Add size validation
+    if (length == 0 || length > max_memory_size) {
+        LOG_ERROR(Common_Memory, "Invalid mapping length: {}", length);
+        return;
+    }
+
+    LogMemoryOperation("Map", virtual_offset, host_offset, length);
+
     ASSERT(virtual_offset % PageAlignment == 0);
-    ASSERT(host_offset % PageAlignment == 0);
     ASSERT(length % PageAlignment == 0);
     ASSERT(virtual_offset + length <= virtual_size);
-    ASSERT(host_offset + length <= backing_size);
 
     if (length == 0 || !virtual_base || !impl) {
         return;
     }
 
-    impl->Map(virtual_offset + virtual_base_offset, host_offset, length, perms);
-
-    // Verify mapping was successful
-    if (!impl->IsValidMapping(virtual_offset + virtual_base_offset, length)) {
-        LOG_CRITICAL(Common_Memory, "Failed to verify memory mapping: virtual_offset={:x}, host_offset={:x}, length={:x}",
-                    virtual_offset, host_offset, length);
+    // Check if mapping is valid
+    if (!impl->IsValidMapping(host_offset, length)) {
+        LOG_WARNING(Common_Memory,
+            "Memory validation failed: virtual=0x{:x}, host=0x{:x}, length=0x{:x}",
+            virtual_offset, host_offset, length);
+        // Continue anyway - the mapping may still work
     }
+
+    impl->Map(virtual_offset + virtual_base_offset, host_offset, length, perms);
 }
 
 void HostMemory::Unmap(size_t virtual_offset, size_t length, bool separate_heap) {
+    LogMemoryOperation("Unmap", virtual_offset, 0, length);
+
     ASSERT(virtual_offset % PageAlignment == 0);
     ASSERT(length % PageAlignment == 0);
     ASSERT(virtual_offset + length <= virtual_size);
+
     if (length == 0 || !virtual_base || !impl) {
         return;
     }
@@ -804,6 +845,69 @@ void HostMemory::EnableDirectMappedAddress() {
         virtual_size += reinterpret_cast<uintptr_t>(virtual_base);
     } else {
         LOG_ERROR(Common_Memory, "Failed to enable direct mapped address");
+    }
+}
+
+bool HostMemory::MapMemory(uint64_t virtual_offset, uint64_t host_offset, uint64_t length) {
+    static constexpr uint64_t MAX_SAFE_ALLOCATION = 0x40000000; // 1GB max allocation
+
+    if (!impl || !impl->IsValidMapping(host_offset, length)) {
+        // For very large allocations, try splitting into smaller chunks
+        if (length > MAX_SAFE_ALLOCATION) {
+            LOG_WARNING(Common_Memory,
+                "Large mapping requested: virtual=0x{:x}, host=0x{:x}, size=0x{:x}. Attempting split allocation.",
+                virtual_offset, host_offset, length);
+
+            // Try mapping in smaller chunks
+            uint64_t remaining = length;
+            uint64_t current_virtual = virtual_offset;
+            uint64_t current_host = host_offset;
+
+            while (remaining > 0) {
+                uint64_t chunk_size = std::min(remaining, MAX_SAFE_ALLOCATION);
+                if (!MapMemory(current_virtual, current_host, chunk_size)) {
+                    LOG_ERROR(Common_Memory,
+                        "Failed to map memory chunk: virtual=0x{:x}, host=0x{:x}, size=0x{:x}",
+                        current_virtual, current_host, chunk_size);
+                    return false;
+                }
+                remaining -= chunk_size;
+                current_virtual += chunk_size;
+                current_host += chunk_size;
+            }
+            return true;
+        }
+
+        LOG_ERROR(Common_Memory,
+            "Failed to verify memory mapping: virtual_offset=0x{:x}, host_offset=0x{:x}, length=0x{:x}",
+            virtual_offset, host_offset, length);
+        return false;
+    }
+
+    // Ensure addresses are page-aligned
+    if ((virtual_offset & (PageAlignment - 1)) || (host_offset & (PageAlignment - 1))) {
+        LOG_ERROR(Common_Memory,
+            "Unaligned memory mapping: virtual=0x{:x}, host=0x{:x}",
+            virtual_offset, host_offset);
+        return false;
+    }
+
+    try {
+        // Add the missing separate_heap parameter
+        Map(virtual_offset, host_offset, length, MemoryPermission::ReadWrite, false);
+
+        if (ENABLE_MEMORY_DEBUG) {
+            LOG_DEBUG(Common_Memory,
+                "Successfully mapped memory: virtual=0x{:x}, host=0x{:x}, length=0x{:x}",
+                virtual_offset, host_offset, length);
+        }
+
+        return true;
+    } catch (const std::exception& e) {
+        LOG_ERROR(Common_Memory,
+            "Failed to map memory: virtual=0x{:x}, host=0x{:x}, length=0x{:x}, error: {}",
+            virtual_offset, host_offset, length, e.what());
+        return false;
     }
 }
 

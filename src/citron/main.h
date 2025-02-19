@@ -407,6 +407,7 @@ private slots:
     void OnShutdownBeginDialog();
     void OnEmulationStopped();
     void OnEmulationStopTimeExpired();
+    void OnHomeMenu();
 
 private:
     QString GetGameListErrorRemoving(InstalledEntryType type) const;

@@ -15,8 +15,8 @@ IGlobalStateController::IGlobalStateController(Core::System& system_)
         {0, nullptr, "RequestToEnterSleep"},
         {1, nullptr, "EnterSleep"},
         {2, nullptr, "StartSleepSequence"},
-        {3, nullptr, "StartShutdownSequence"},
-        {4, nullptr, "StartRebootSequence"},
+        {3, D<&IGlobalStateController::StartShutdownSequence>, "StartShutdownSequence"},
+        {4, D<&IGlobalStateController::StartRebootSequence>, "StartRebootSequence"},
         {9, nullptr, "IsAutoPowerDownRequested"},
         {10, D<&IGlobalStateController::LoadAndApplyIdlePolicySettings>, "LoadAndApplyIdlePolicySettings"},
         {11, nullptr, "NotifyCecSettingsChanged"},
@@ -55,6 +55,18 @@ Result IGlobalStateController::OpenCradleFirmwareUpdater(
     Out<SharedPointer<ICradleFirmwareUpdater>> out_cradle_firmware_updater) {
     LOG_INFO(Service_AM, "called");
     *out_cradle_firmware_updater = std::make_shared<ICradleFirmwareUpdater>(system);
+    R_SUCCEED();
+}
+
+Result IGlobalStateController::StartShutdownSequence() {
+    LOG_INFO(Service_AM, "called");
+    system.Exit();
+    R_SUCCEED();
+}
+
+Result IGlobalStateController::StartRebootSequence() {
+    LOG_INFO(Service_AM, "called");
+    system.Exit();
     R_SUCCEED();
 }
 

@@ -266,7 +266,7 @@ Result ICommonStateGetter::GetSettingsPlatformRegion(
 }
 
 Result ICommonStateGetter::SetRequestExitToLibraryAppletAtExecuteNextProgramEnabled() {
-    LOG_WARNING(Service_AM, "(STUBBED) called");
+    LOG_DEBUG(Service_AM, "called");
 
     std::scoped_lock lk{m_applet->lock};
     m_applet->request_exit_to_library_applet_at_execute_next_program_enabled = true;

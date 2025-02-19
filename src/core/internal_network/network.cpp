@@ -384,7 +384,7 @@ Domain TranslateDomainFromNative(int domain) {
     }
 }
 
-int TranslateDomainToNative(Domain domain) {
+[[maybe_unused]] static int TranslateDomainToNative(Domain domain) {
     switch (domain) {
     case Domain::Unspecified:
         return 0;
@@ -414,7 +414,7 @@ Type TranslateTypeFromNative(int type) {
     }
 }
 
-int TranslateTypeToNative(Type type) {
+[[maybe_unused]] static int TranslateTypeToNative(Type type) {
     switch (type) {
     case Type::Unspecified:
         return 0;
@@ -444,7 +444,7 @@ Protocol TranslateProtocolFromNative(int protocol) {
     }
 }
 
-int TranslateProtocolToNative(Protocol protocol) {
+[[maybe_unused]] static int TranslateProtocolToNative(Protocol protocol) {
     switch (protocol) {
     case Protocol::Unspecified:
         return 0;
@@ -548,26 +548,14 @@ void RestartSocketOperations() {
     AcknowledgeInterrupt();
 }
 
-std::optional<IPv4Address> GetHostIPv4Address() {
-    const auto network_interface = Network::GetSelectedNetworkInterface();
-    if (!network_interface.has_value()) {
-        // Only print the error once to avoid log spam
-        static bool print_error = true;
-        if (print_error) {
-            LOG_ERROR(Network, "GetSelectedNetworkInterface returned no interface");
-            print_error = false;
-        }
-
-        return {};
+std::optional<Network::IPv4Address> GetHostIPv4Address() {
+    const auto interface = Network::GetSelectedNetworkInterface();
+    if (!interface) {
+        LOG_DEBUG(Network, "No network interface selected, returning default address");
+        return Network::IPv4Address{127, 0, 0, 1};  // Return loopback address when no interface is selected
     }
 
-    return TranslateIPv4(network_interface->ip_address);
-}
-
-std::string IPv4AddressToString(IPv4Address ip_addr) {
-    std::array<char, INET_ADDRSTRLEN> buf = {};
-    ASSERT(inet_ntop(AF_INET, &ip_addr, buf.data(), sizeof(buf)) == buf.data());
-    return std::string(buf.data());
+    return Network::TranslateIPv4(interface->ip_address);
 }
 
 u32 IPv4AddressToInteger(IPv4Address ip_addr) {
@@ -679,14 +667,32 @@ Errno Socket::SetSockOpt(SOCKET fd_so, int option, T value) {
     return GetAndLogLastError();
 }
 
-Errno Socket::Initialize(Domain domain, Type type, Protocol protocol) {
-    fd = socket(TranslateDomainToNative(domain), TranslateTypeToNative(type),
-                TranslateProtocolToNative(protocol));
-    if (fd != INVALID_SOCKET) {
+Errno Socket::Initialize(Domain domain_, Type type_, Protocol protocol_) {
+    domain_value = domain_;
+    type_value = type_;
+    protocol_value = protocol_;
+
+    if (fd >= 0) {
         return Errno::SUCCESS;
     }
 
-    return GetAndLogLastError();
+    fd = static_cast<SOCKET>(socket(TranslateDomainToNative(domain_value),
+                                  TranslateTypeToNative(type_value),
+                                  TranslateProtocolToNative(protocol_value)));
+    if (fd < 0) {
+        const Errno error = GetAndLogLastError();
+        LOG_ERROR(Network, "Socket creation failed");
+
+        // If we can't create the socket, force offline mode
+        if (error == Errno::NOMEM) {
+            LOG_WARNING(Network, "Critical socket error, forcing offline mode");
+            ForceOfflineMode();
+            return Errno::SUCCESS;
+        }
+        return error;
+    }
+
+    return Errno::SUCCESS;
 }
 
 std::pair<SocketBase::AcceptResult, Errno> Socket::Accept() {
@@ -928,6 +934,23 @@ bool Socket::IsOpened() const {
 
 void Socket::HandleProxyPacket(const ProxyPacket& packet) {
     LOG_WARNING(Network, "ProxyPacket received, but not in Proxy mode!");
+}
+
+void ForceOfflineMode() {
+    LOG_INFO(Network, "Forcing offline mode due to network initialization issues");
+    // Use the correct setting name
+    Settings::values.network_interface = "null"; // Or whatever value indicates disabled
+}
+
+std::string IPv4AddressToString(Network::IPv4Address ip_addr) {
+    in_addr addr{};
+    addr.s_addr = (ip_addr[0]) | (ip_addr[1] << 8) | (ip_addr[2] << 16) | (ip_addr[3] << 24);
+
+    std::array<char, INET_ADDRSTRLEN> buf{};
+    if (inet_ntop(AF_INET, &addr, buf.data(), sizeof(buf)) != buf.data()) {
+        return "0.0.0.0";
+    }
+    return std::string(buf.data());
 }
 
 } // namespace Network

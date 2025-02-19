@@ -53,6 +53,8 @@ private:
     Result GetStereoVisionRestriction(Out<bool> out_stereo_vision_restriction);
     Result SetStereoVisionRestriction(bool stereo_vision_restriction);
     Result ResetConfirmedStereoVisionPermission();
+    Result GetSelfController(Out<SharedPointer<IParentalControlService>> out_controller);
+    Result GetPlayTimerRemainingTime(Out<s32> out_remaining_time);
 
     struct States {
         u64 current_tid{};

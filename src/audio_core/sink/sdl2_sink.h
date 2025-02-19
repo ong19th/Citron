@@ -5,6 +5,7 @@
 
 #include <string>
 #include <vector>
+#include <SDL.h>
 
 #include "audio_core/sink/sink.h"
 
@@ -94,5 +95,22 @@ std::vector<std::string> ListSDLSinkDevices(bool capture);
  * @return True is this backend is suitable, false otherwise.
  */
 bool IsSDLSuitable();
+
+class SDLSinkStream final : public SinkStream {
+public:
+    SDLSinkStream(u32 sample_rate, u32 num_channels, const std::string& output_device,
+                  const std::string& input_device, StreamType type, Core::System& system);
+    ~SDLSinkStream();
+
+    void Start(bool resume) override;
+    void Stop() override;
+    void Finalize();
+
+private:
+    void DataCallback(void* userdata, Uint8* stream, int len);
+
+    bool running{false};
+    SDL_AudioDeviceID audio_device_id{};
+};
 
 } // namespace AudioCore::Sink

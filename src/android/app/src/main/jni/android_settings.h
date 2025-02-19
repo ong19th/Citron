@@ -70,7 +70,7 @@ struct Values {
                                                      Settings::Category::Overlay};
     Settings::Setting<bool> show_thermal_overlay{linkage, true, "show_thermal_overlay",
                                                  Settings::Category::Overlay};
-    Settings::Setting<bool> show_ram_overlay{linkage, true, "show_ram_overlay",
+    Settings::Setting<bool> show_ram_overlay{linkage, false, "show_ram_overlay",
                                              Settings::Category::Overlay};
     Settings::Setting<bool> show_input_overlay{linkage, true, "show_input_overlay",
                                                Settings::Category::Overlay};

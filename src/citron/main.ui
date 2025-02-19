@@ -17,91 +17,6 @@
    <iconset resource="citron.qrc">
     <normaloff>:/img/citron.ico</normaloff>:/img/citron.ico</iconset>
   </property>
-  <property name="styleSheet">
-   <string notr="true">QMainWindow {
-    background-color: #2D2D2D;
-}
-
-QMenuBar {
-    background-color: #333333;
-    color: #E0E0E0;
-    border-bottom: 1px solid #404040;
-    padding: 2px;
-}
-
-QMenuBar::item {
-    padding: 4px 8px;
-    background: transparent;
-    border-radius: 4px;
-}
-
-QMenuBar::item:selected {
-    background: #404040;
-}
-
-QMenuBar::item:pressed {
-    background: #505050;
-}
-
-QMenu {
-    background-color: #333333;
-    border: 1px solid #404040;
-    padding: 4px;
-}
-
-QMenu::item {
-    padding: 6px 24px 6px 12px;
-    color: #E0E0E0;
-    border-radius: 4px;
-}
-
-QMenu::item:selected {
-    background-color: #404040;
-}
-
-QMenu::separator {
-    height: 1px;
-    background: #404040;
-    margin: 4px 0px;
-}
-
-QStatusBar {
-    background-color: #333333;
-    color: #E0E0E0;
-    border-top: 1px solid #404040;
-}
-
-QDockWidget {
-    border: 1px solid #404040;
-    titlebar-close-icon: url(close.png);
-}
-
-QDockWidget::title {
-    background: #333333;
-    padding: 6px;
-    color: #E0E0E0;
-}
-
-QToolBar {
-    background: #333333;
-    border: none;
-    spacing: 3px;
-    padding: 3px;
-}
-
-QToolButton {
-    border-radius: 4px;
-    padding: 4px;
-}
-
-QToolButton:hover {
-    background-color: #404040;
-}
-
-QToolButton:pressed {
-    background-color: #505050;
-}</string>
-  </property>
   <property name="tabShape">
    <enum>QTabWidget::Rounded</enum>
   </property>
@@ -130,7 +45,7 @@ QToolButton:pressed {
      <x>0</x>
      <y>0</y>
      <width>1280</width>
-     <height>29</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -254,6 +169,7 @@ QToolButton:pressed {
     <addaction name="action_Install_Firmware"/>
     <addaction name="action_Verify_installed_contents"/>
     <addaction name="separator"/>
+    <addaction name="action_Load_Home_Menu"/>
     <addaction name="menu_cabinet_applet"/>
     <addaction name="action_Load_Album"/>
     <addaction name="action_Load_Mii_Edit"/>
@@ -266,7 +182,6 @@ QToolButton:pressed {
     <property name="title">
      <string>&amp;Help</string>
     </property>
-    <addaction name="action_Report_Compatibility"/>
     <addaction name="action_About"/>
    </widget>
    <addaction name="menu_File"/>
@@ -322,7 +237,7 @@ QToolButton:pressed {
   </action>
   <action name="action_About">
    <property name="text">
-    <string>&amp;About citron</string>
+    <string>&amp;About Citron</string>
    </property>
   </action>
   <action name="action_Single_Window_Mode">
@@ -457,7 +372,15 @@ QToolButton:pressed {
   </action>
   <action name="action_Open_citron_Folder">
    <property name="text">
-    <string>Open &amp;citron Folder</string>
+    <string>Open &amp;Citron Folder</string>
+   </property>
+  </action>
+  <action name="action_Load_Home_Menu">
+   <property name="text">
+    <string>Launch System Menu</string>
+   </property>
+   <property name="toolTip">
+    <string>Launch the system Home Menu</string>
    </property>
   </action>
   <action name="action_Capture_Screenshot">
@@ -554,16 +477,6 @@ QToolButton:pressed {
   <action name="action_Install_Keys">
    <property name="text">
     <string>Install Decryption Keys</string>
-   </property>
-  </action>
-  <action name="actionSave">
-   <property name="text">
-    <string>&amp;Save</string>
-   </property>
-  </action>
-  <action name="actionLoad">
-   <property name="text">
-    <string>&amp;Load</string>
    </property>
   </action>
  </widget>

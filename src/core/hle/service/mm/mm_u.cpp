@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <vector>
 #include "common/logging/log.h"
 #include "core/hle/service/ipc_helpers.h"
 #include "core/hle/service/mm/mm_u.h"

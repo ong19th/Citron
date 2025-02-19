@@ -55,8 +55,9 @@ std::size_t WriteVectors(std::span<u8> dst, const std::vector<T>& src, std::size
 
 nvhost_nvdec_common::nvhost_nvdec_common(Core::System& system_, NvCore::Container& core_,
                                          NvCore::ChannelType channel_type_)
-    : nvdevice{system_}, core{core_}, syncpoint_manager{core.GetSyncpointManager()},
-      nvmap{core.GetNvMapFile()}, channel_type{channel_type_} {
+    : nvdevice{system_}, host1x{system_.Host1x()}, core{core_},
+      syncpoint_manager{core.GetSyncpointManager()}, nvmap{core.GetNvMapFile()},
+      channel_type{channel_type_} {
     auto& syncpts_accumulated = core.Host1xDeviceFile().syncpts_accumulated;
     if (syncpts_accumulated.empty()) {
         channel_syncpoint = syncpoint_manager.AllocateSyncpoint(false);

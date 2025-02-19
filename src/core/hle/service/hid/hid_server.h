@@ -31,8 +31,6 @@ public:
 
     std::shared_ptr<ResourceManager> GetResourceManager();
 
-    Result SetGestureOutputRanges(u32, u32, u32, u32);
-
 private:
     Result CreateAppletResource(OutInterface<IAppletResource> out_applet_resource,
                                 ClientAppletResourceUserId aruid);
@@ -106,6 +104,7 @@ private:
     Result ResetIsSixAxisSensorDeviceNewlyAssigned(Core::HID::SixAxisSensorHandle sixaxis_handle,
                                                    ClientAppletResourceUserId aruid);
     Result ActivateGesture(u32 basic_gesture_id, ClientAppletResourceUserId aruid);
+    Result SetGestureOutputRanges(u32, u32, u32, u32);
     Result SetSupportedNpadStyleSet(Core::HID::NpadStyleSet supported_style_set,
                                     ClientAppletResourceUserId aruid);
     Result GetSupportedNpadStyleSet(Out<Core::HID::NpadStyleSet> out_supported_style_set,

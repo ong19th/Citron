@@ -5,6 +5,7 @@
 
 #include "core/hle/service/cmif_types.h"
 #include "core/hle/service/service.h"
+#include "core/hle/service/am/service/global_state_controller.h"
 
 namespace Service {
 
@@ -14,6 +15,7 @@ struct Applet;
 struct AppletAttribute;
 class ILibraryAppletProxy;
 class ISystemAppletProxy;
+class IGlobalStateController;
 class WindowSystem;
 
 class IAllSystemAppletProxiesService final
@@ -34,7 +36,8 @@ private:
         Out<SharedPointer<ILibraryAppletProxy>> out_library_applet_proxy, ClientProcessId pid,
         InCopyHandle<Kernel::KProcess> process_handle);
 
-private:
+    Result GetGlobalStateController(Out<SharedPointer<IGlobalStateController>> out_controller);
+
     std::shared_ptr<Applet> GetAppletFromProcessId(ProcessId pid);
 
     WindowSystem& m_window_system;

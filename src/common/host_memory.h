@@ -52,6 +52,13 @@ public:
 
     void ClearBackingRegion(size_t physical_offset, size_t length, u32 fill_value);
 
+    /// Attempts to map memory with additional safety checks and chunking for large allocations
+    /// @param virtual_offset The virtual memory address to map to
+    /// @param host_offset The physical memory address to map from
+    /// @param length The size of the mapping in bytes
+    /// @return true if mapping succeeded, false if it failed
+    bool MapMemory(uint64_t virtual_offset, uint64_t host_offset, uint64_t length);
+
     [[nodiscard]] u8* BackingBasePointer() noexcept {
         return backing_base;
     }

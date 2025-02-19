@@ -98,12 +98,12 @@ endif()
 option(ENABLE_OPENSSL "Enable OpenSSL backend for ISslConnection" ${DEFAULT_ENABLE_OPENSSL})
 
 if (ANDROID AND CITRON_DOWNLOAD_ANDROID_VVL)
-    set(vvl_version "sdk-1.3.261.1")
+    set(vvl_version "vulkan-sdk-1.4.304.1")
     set(vvl_zip_file "${CMAKE_BINARY_DIR}/externals/vvl-android.zip")
     if (NOT EXISTS "${vvl_zip_file}")
         # Download and extract validation layer release to externals directory
         set(vvl_base_url "https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases/download")
-        file(DOWNLOAD "${vvl_base_url}/${vvl_version}/android-binaries-${vvl_version}-android.zip"
+        file(DOWNLOAD "${vvl_base_url}/${vvl_version}/android-binaries-1.4.304.1.zip"
             "${vvl_zip_file}" SHOW_PROGRESS)
         execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${vvl_zip_file}"
                         WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externals")
@@ -142,9 +142,9 @@ if (CITRON_USE_BUNDLED_VCPKG)
 
     if (MSVC)
         set(VCPKG_DOWNLOADS_PATH ${PROJECT_SOURCE_DIR}/externals/vcpkg/downloads)
-        set(NASM_VERSION "2.16.01")
+        set(NASM_VERSION "2.16.03")
         set(NASM_DESTINATION_PATH ${VCPKG_DOWNLOADS_PATH}/nasm-${NASM_VERSION}-win64.zip)
-        set(NASM_DOWNLOAD_URL "https://github.com/yuzu-mirror/ext-windows-bin/raw/master/nasm/nasm-${NASM_VERSION}-win64.zip")
+        set(NASM_DOWNLOAD_URL "https://www.nasm.us/pub/nasm/releasebuilds/${NASM_VERSION}/win64/nasm-${NASM_VERSION}-win64.zip")
 
         if (NOT EXISTS ${NASM_DESTINATION_PATH})
             file(DOWNLOAD ${NASM_DOWNLOAD_URL} ${NASM_DESTINATION_PATH} SHOW_PROGRESS STATUS NASM_STATUS)
@@ -231,7 +231,7 @@ endif()
 if (ENABLE_COMPATIBILITY_LIST_DOWNLOAD AND NOT EXISTS ${PROJECT_BINARY_DIR}/dist/compatibility_list/compatibility_list.json)
     message(STATUS "Downloading compatibility list for citron...")
     file(DOWNLOAD
-        https://api.yuzu-mirror.org/gamedb/
+        https://api.citron-emu.org/gamedb/
         "${PROJECT_BINARY_DIR}/dist/compatibility_list/compatibility_list.json" SHOW_PROGRESS)
 endif()
 if (NOT EXISTS ${PROJECT_BINARY_DIR}/dist/compatibility_list/compatibility_list.json)
@@ -312,7 +312,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 # Enforce the search mode of non-required packages for better and shorter failure messages
 find_package(Boost REQUIRED context)
 find_package(enet MODULE)
-find_package(fmt REQUIRED)
+find_package(fmt 11 REQUIRED)
 if (CITRON_USE_LLVM_DEMANGLE)
     find_package(LLVM MODULE COMPONENTS Demangle)
 endif()
@@ -327,7 +327,7 @@ find_package(ZLIB REQUIRED)
 find_package(zstd REQUIRED)
 
 if (NOT CITRON_USE_EXTERNAL_VULKAN_HEADERS)
-    find_package(VulkanHeaders 1.4.306 REQUIRED)
+    find_package(VulkanHeaders 1.4.307 REQUIRED)
 endif()
 
 if (NOT CITRON_USE_EXTERNAL_VULKAN_UTILITY_LIBRARIES)
@@ -335,19 +335,19 @@ if (NOT CITRON_USE_EXTERNAL_VULKAN_UTILITY_LIBRARIES)
 endif()
 
 if (ENABLE_LIBUSB)
-    find_package(libusb 1.0.24 MODULE)
+    find_package(libusb MODULE)
 endif()
 
 if (ARCHITECTURE_x86 OR ARCHITECTURE_x86_64)
-    find_package(xbyak 6 CONFIG)
+    find_package(xbyak CONFIG)
 endif()
 
 if (ARCHITECTURE_arm64)
-    find_package(oaknut 2.0.1 CONFIG)
+    find_package(oaknut CONFIG)
 endif()
 
 if (ARCHITECTURE_x86_64 OR ARCHITECTURE_arm64)
-    find_package(dynarmic 6.4.0 CONFIG)
+    find_package(dynarmic CONFIG)
 endif()
 
 if (ENABLE_CUBEB)
@@ -359,12 +359,12 @@ if (USE_DISCORD_PRESENCE)
 endif()
 
 if (ENABLE_WEB_SERVICE)
-    find_package(cpp-jwt 1.4 CONFIG)
-    find_package(httplib 0.12 MODULE COMPONENTS OpenSSL)
+    find_package(cpp-jwt CONFIG)
+    find_package(httplib MODULE COMPONENTS OpenSSL)
 endif()
 
 if (CITRON_TESTS)
-    find_package(Catch2 3.0.1 REQUIRED)
+    find_package(Catch2 REQUIRED)
 endif()
 
 # boost:asio has functions that require AcceptEx et al
@@ -373,11 +373,11 @@ if (MINGW)
 endif()
 
 if(ENABLE_OPENSSL)
-    find_package(OpenSSL 1.1.1 REQUIRED)
+    find_package(OpenSSL REQUIRED)
 endif()
 
 if (UNIX AND NOT APPLE)
-    find_package(gamemode 1.7 MODULE)
+    find_package(gamemode MODULE)
 endif()
 
 # Please consider this as a stub
@@ -390,7 +390,7 @@ if (ENABLE_SDL2)
     if (CITRON_USE_BUNDLED_SDL2)
         # Detect toolchain and platform
         if ((MSVC_VERSION GREATER_EQUAL 1920) AND ARCHITECTURE_x86_64)
-            set(SDL2_VER "SDL2-2.28.2")
+            set(SDL2_VER "SDL2-2.32.0")
         else()
             message(FATAL_ERROR "No bundled SDL2 binaries for your toolchain. Disable CITRON_USE_BUNDLED_SDL2 and provide your own.")
         endif()
@@ -416,10 +416,13 @@ endif()
 
 add_subdirectory(externals)
 
+if (USE_DISCORD_PRESENCE)
+    target_compile_options(discord-rpc PRIVATE -fpermissive)
+endif()
 
 if (ENABLE_QT)
     if (NOT USE_SYSTEM_QT)
-        download_qt(6.7.3)
+        download_qt(6.8.2)
     endif()
 
     find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia Concurrent Network)
@@ -484,7 +487,7 @@ list(APPEND CITRON_QT_COMPONENTS2 Multimedia)
 endif()
 if (NOT CITRON_USE_BUNDLED_FFMPEG)
     # Use system installed FFmpeg
-    find_package(FFmpeg 4.3 REQUIRED QUIET COMPONENTS ${FFmpeg_COMPONENTS})
+    find_package(FFmpeg REQUIRED QUIET COMPONENTS ${FFmpeg_COMPONENTS})
 endif()
 
 if(ENABLE_QT)
@@ -534,7 +537,7 @@ endif()
 # against all the src files. This should be used before making a pull request.
 # =======================================================================
 
-set(CLANG_FORMAT_POSTFIX "-15")
+set(CLANG_FORMAT_POSTFIX "-18")
 find_program(CLANG_FORMAT
     NAMES clang-format${CLANG_FORMAT_POSTFIX}
           clang-format
@@ -545,7 +548,7 @@ if (NOT CLANG_FORMAT)
         message(STATUS "Clang format not found! Downloading...")
         set(CLANG_FORMAT "${PROJECT_BINARY_DIR}/externals/clang-format${CLANG_FORMAT_POSTFIX}.exe")
         file(DOWNLOAD
-            https://github.com/yuzu-mirror/ext-windows-bin/raw/master/clang-format${CLANG_FORMAT_POSTFIX}.exe
+            https://git.citron-emu.org/Citron/ext-windows-bin/raw/master/clang-format${CLANG_FORMAT_POSTFIX}.exe
             "${CLANG_FORMAT}" SHOW_PROGRESS
             STATUS DOWNLOAD_SUCCESS)
         if (NOT DOWNLOAD_SUCCESS EQUAL 0)
@@ -672,8 +675,4 @@ if(ENABLE_QT AND UNIX AND NOT APPLE)
             DESTINATION "share/mime/packages")
     install(FILES "dist/org.citron_emu.citron.metainfo.xml"
             DESTINATION "share/metainfo")
-endif()
-
-if (USE_DISCORD_PRESENCE)
-    target_compile_options(discord-rpc PRIVATE -fpermissive)
 endif()

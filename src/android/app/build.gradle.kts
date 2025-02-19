@@ -28,7 +28,7 @@ android {
     namespace = "org.citron.citron_emu"
     compileSdk = 35
 
-    ndkVersion = "26.3.11579264"
+    ndkVersion = "28.0.13004108" // "26.3.11579264"
 
     buildFeatures {
         viewBinding = true
@@ -36,12 +36,12 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = "21"
     }
 
     packaging {
@@ -106,10 +106,12 @@ android {
 
             resValue("string", "app_name_suffixed", "Citron")
             isDefault = true
+            isShrinkResources = true
             isMinifyEnabled = true
+            isJniDebuggable = false
             isDebuggable = false
             proguardFiles(
-                getDefaultProguardFile("proguard-android.txt"),
+                getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
@@ -122,7 +124,7 @@ android {
             isMinifyEnabled = true
             isDebuggable = true
             proguardFiles(
-                getDefaultProguardFile("proguard-android.txt"),
+                getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
             versionNameSuffix = "-relWithDebInfo"
@@ -181,7 +183,7 @@ android {
                     "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
                 )
 
-                abiFilters("arm64-v8a", "x86_64")
+                abiFilters("arm64-v8a") // , "x86_64")
             }
         }
     }
@@ -250,8 +252,6 @@ dependencies {
     // Third Party Libraries
     implementation("io.coil-kt:coil:2.2.2")
     implementation("info.debatty:java-string-similarity:2.0.0")
-
-]]
 }
 
 fun runGitCommand(command: List<String>): String {

@@ -88,6 +88,15 @@ std::vector<NetworkInterface> GetAvailableNetworkInterfaces() {
             .gateway = gateway});
     }
 
+    // If no interfaces found, create a fallback loopback interface
+    if (result.empty()) {
+        LOG_WARNING(Network, "No network interfaces detected, adding fallback loopback interface");
+        NetworkInterface loopback;
+        loopback.name = "fallback_loopback";
+        loopback.ip_address.s_addr = htonl(INADDR_LOOPBACK);
+        result.push_back(loopback);
+    }
+
     return result;
 }
 
@@ -181,6 +190,15 @@ std::vector<NetworkInterface> GetAvailableNetworkInterfaces() {
 
     freeifaddrs(ifaddr);
 
+    // If no interfaces found, create a fallback loopback interface
+    if (result.empty()) {
+        LOG_WARNING(Network, "No network interfaces detected, adding fallback loopback interface");
+        NetworkInterface loopback;
+        loopback.name = "fallback_loopback";
+        loopback.ip_address.s_addr = htonl(INADDR_LOOPBACK);
+        result.push_back(loopback);
+    }
+
     return result;
 }
 
@@ -192,6 +210,10 @@ std::optional<NetworkInterface> GetSelectedNetworkInterface() {
     if (network_interfaces.empty()) {
         LOG_ERROR(Network, "GetAvailableNetworkInterfaces returned no interfaces");
         return std::nullopt;
+    }
+
+    if (selected_network_interface == "None" || selected_network_interface.empty()) {
+        return std::nullopt;  // Return empty/default interface
     }
 
     const auto res =
