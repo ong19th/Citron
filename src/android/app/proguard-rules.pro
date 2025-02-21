@@ -22,3 +22,10 @@
 -dontwarn java.beans.Introspector
 -dontwarn java.beans.VetoableChangeListener
 -dontwarn java.beans.VetoableChangeSupport
+
+# LicenseVerifier protection
+-keep class org.citron.citron_emu.utils.LicenseVerifier { *; }
+-keepnames class org.citron.citron_emu.utils.LicenseVerifier
+-dontskipnonpubliclibraryclasses
+-dontoptimize
+-dontpreverify

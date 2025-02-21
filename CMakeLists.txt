@@ -98,24 +98,21 @@ endif()
 option(ENABLE_OPENSSL "Enable OpenSSL backend for ISslConnection" ${DEFAULT_ENABLE_OPENSSL})
 
 if (ANDROID AND CITRON_DOWNLOAD_ANDROID_VVL)
-    set(vvl_version "vulkan-sdk-1.4.304.1")
+    set(vvl_version "1.4.304.1")
     set(vvl_zip_file "${CMAKE_BINARY_DIR}/externals/vvl-android.zip")
     if (NOT EXISTS "${vvl_zip_file}")
         # Download and extract validation layer release to externals directory
         set(vvl_base_url "https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases/download")
-        file(DOWNLOAD "${vvl_base_url}/${vvl_version}/android-binaries-1.4.304.1.zip"
+        file(DOWNLOAD "${vvl_base_url}/vulkan-sdk-${vvl_version}/android-binaries-${vvl_version}.zip"
             "${vvl_zip_file}" SHOW_PROGRESS)
         execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${vvl_zip_file}"
                         WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externals")
     endif()
 
-    # Copy the arm64 binary to src/android/app/main/jniLibs only if it doesn't exist
+    # Copy the arm64 binary to src/android/app/main/jniLibs
     set(vvl_lib_path "${CMAKE_CURRENT_SOURCE_DIR}/src/android/app/src/main/jniLibs/arm64-v8a/")
-    set(vvl_lib_file "${vvl_lib_path}/libVkLayer_khronos_validation.so")
-    if (NOT EXISTS "${vvl_lib_file}")
-        file(COPY "${CMAKE_BINARY_DIR}/externals/android-binaries-${vvl_version}/arm64-v8a/libVkLayer_khronos_validation.so"
-                DESTINATION "${vvl_lib_path}")
-    endif()
+    file(COPY "${CMAKE_BINARY_DIR}/externals/android-binaries-${vvl_version}/arm64-v8a/libVkLayer_khronos_validation.so"
+            DESTINATION "${vvl_lib_path}")
 endif()
 
 if (ANDROID)
@@ -129,15 +126,22 @@ if (CITRON_USE_BUNDLED_VCPKG)
 
         if (CMAKE_ANDROID_ARCH_ABI STREQUAL "arm64-v8a")
             set(VCPKG_TARGET_TRIPLET "arm64-android")
+            set(VCPKG_HOST_TRIPLET "x64-windows")
             # this is to avoid CMake using the host pkg-config to find the host
             # libraries when building for Android targets
             set(PKG_CONFIG_EXECUTABLE "aarch64-none-linux-android-pkg-config" CACHE FILEPATH "" FORCE)
         elseif (CMAKE_ANDROID_ARCH_ABI STREQUAL "x86_64")
             set(VCPKG_TARGET_TRIPLET "x64-android")
+            set(VCPKG_HOST_TRIPLET "x64-windows")
             set(PKG_CONFIG_EXECUTABLE "x86_64-none-linux-android-pkg-config" CACHE FILEPATH "" FORCE)
         else()
             message(FATAL_ERROR "Unsupported Android architecture ${CMAKE_ANDROID_ARCH_ABI}")
         endif()
+
+        # Add these lines to ensure proper Android toolchain setup
+        set(VCPKG_CHAINLOAD_TOOLCHAIN_FILE "${ANDROID_NDK}/build/cmake/android.toolchain.cmake")
+        set(VCPKG_CRT_LINKAGE "dynamic")
+        set(VCPKG_LIBRARY_LINKAGE "static")
     endif()
 
     if (MSVC)

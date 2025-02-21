@@ -52,6 +52,7 @@ import org.citron.citron_emu.utils.NativeConfig
 import org.citron.citron_emu.utils.NfcReader
 import org.citron.citron_emu.utils.ParamPackage
 import org.citron.citron_emu.utils.ThemeHelper
+import org.citron.citron_emu.utils.LicenseVerifier
 import java.text.NumberFormat
 import kotlin.math.roundToInt
 
@@ -78,6 +79,9 @@ class EmulationActivity : AppCompatActivity(), SensorEventListener {
         ThemeHelper.setTheme(this)
 
         super.onCreate(savedInstanceState)
+
+        // Add license verification at the start
+        LicenseVerifier.verifyLicense(this)
 
         InputHandler.updateControllerData()
         val players = NativeConfig.getInputSettings(true)
