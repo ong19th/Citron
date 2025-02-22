@@ -100,19 +100,23 @@ option(ENABLE_OPENSSL "Enable OpenSSL backend for ISslConnection" ${DEFAULT_ENAB
 if (ANDROID AND CITRON_DOWNLOAD_ANDROID_VVL)
     set(vvl_version "1.4.304.1")
     set(vvl_zip_file "${CMAKE_BINARY_DIR}/externals/vvl-android.zip")
-    if (NOT EXISTS "${vvl_zip_file}")
-        # Download and extract validation layer release to externals directory
-        set(vvl_base_url "https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases/download")
-        file(DOWNLOAD "${vvl_base_url}/vulkan-sdk-${vvl_version}/android-binaries-${vvl_version}.zip"
-            "${vvl_zip_file}" SHOW_PROGRESS)
-        execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${vvl_zip_file}"
-                        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externals")
-    endif()
-
-    # Copy the arm64 binary to src/android/app/main/jniLibs
     set(vvl_lib_path "${CMAKE_CURRENT_SOURCE_DIR}/src/android/app/src/main/jniLibs/arm64-v8a/")
-    file(COPY "${CMAKE_BINARY_DIR}/externals/android-binaries-${vvl_version}/arm64-v8a/libVkLayer_khronos_validation.so"
-            DESTINATION "${vvl_lib_path}")
+    set(vvl_final_lib "${vvl_lib_path}/libVkLayer_khronos_validation.so")
+
+    if (NOT EXISTS "${vvl_final_lib}")
+        # Download and extract validation layer release to externals directory
+        if (NOT EXISTS "${vvl_zip_file}")
+            set(vvl_base_url "https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases/download")
+            file(DOWNLOAD "${vvl_base_url}/vulkan-sdk-${vvl_version}/android-binaries-${vvl_version}.zip"
+                "${vvl_zip_file}" SHOW_PROGRESS)
+            execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${vvl_zip_file}"
+                            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externals")
+        endif()
+
+        # Copy the arm64 binary to src/android/app/main/jniLibs
+        file(COPY "${CMAKE_BINARY_DIR}/externals/android-binaries-${vvl_version}/arm64-v8a/libVkLayer_khronos_validation.so"
+                DESTINATION "${vvl_lib_path}")
+    endif()
 endif()
 
 if (ANDROID)
