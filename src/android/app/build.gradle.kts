@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2023 yuzu Emulator Project
-// SPDX-FileCopyrightText: 2023 citron Emulator Project
+// SPDX-FileCopyrightText: 2025 citron Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import android.annotation.SuppressLint
@@ -11,10 +11,10 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("kotlin-parcelize")
-    kotlin("plugin.serialization") version "1.9.20"
+    kotlin("plugin.serialization") version "2.1.20-RC"
     id("androidx.navigation.safeargs.kotlin")
-    id("org.jlleitschuh.gradle.ktlint") version "11.4.0"
-    id("com.github.triplet.play") version "3.8.6"
+    id("org.jlleitschuh.gradle.ktlint") version "12.1.2"
+    id("com.github.triplet.play") version "3.12.1"
 }
 
 /**
@@ -28,20 +28,20 @@ val autoVersion = (((System.currentTimeMillis() / 1000) - 1451606400) / 10).toIn
 android {
     namespace = "org.citron.citron_emu"
 
-    compileSdkVersion = "android-34"
-    ndkVersion = "26.1.10909125"
+    compileSdkVersion = "android-35"
+    ndkVersion = "28.0.13004108" // "27.2.12479018" // "26.1.10909125"
 
     buildFeatures {
         viewBinding = true
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = "21"
     }
 
     packaging {
@@ -57,7 +57,8 @@ android {
         // TODO If this is ever modified, change application_id in strings.xml
         applicationId = "org.citron.citron_emu"
         minSdk = 30
-        targetSdk = 34
+        //noinspection EditedTargetSdkVersion
+        targetSdk = 35
         versionName = getGitVersion()
 
         versionCode = if (System.getenv("AUTO_VERSIONED") == "true") {
@@ -116,9 +117,11 @@ android {
             resValue("string", "app_name_suffixed", "Citron")
             isDefault = true
             isMinifyEnabled = true
+            isShrinkResources = true
+            isJniDebuggable = false
             isDebuggable = false
             proguardFiles(
-                getDefaultProguardFile("proguard-android.txt"),
+                getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
@@ -130,7 +133,7 @@ android {
             signingConfig = signingConfigs.getByName("default")
             isDebuggable = true
             proguardFiles(
-                getDefaultProguardFile("proguard-android.txt"),
+                getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
             versionNameSuffix = "-relWithDebInfo"
@@ -167,7 +170,7 @@ android {
 
     externalNativeBuild {
         cmake {
-            version = "3.22.1"
+            version = "3.31.5"
             path = file("../../../CMakeLists.txt")
         }
     }
@@ -176,9 +179,9 @@ android {
         externalNativeBuild {
             cmake {
                 arguments(
-                    "-DENABLE_QT=0", // Don't use QT
-                    "-DENABLE_SDL2=0", // Don't use SDL
-                    "-DENABLE_WEB_SERVICE=0", // Don't use telemetry
+                    "-DENABLE_QT=OFF", // Don't use QT
+                    "-DENABLE_SDL2=OFF", // Don't use SDL
+                    "-DENABLE_WEB_SERVICE=OFF", // Don't use telemetry
                     "-DBUNDLE_SPEEX=ON",
                     "-DANDROID_ARM_NEON=true", // cryptopp requires Neon to work
                     "-DCITRON_USE_BUNDLED_VCPKG=ON",
@@ -209,7 +212,7 @@ tasks.getByPath("ktlintMainSourceSetCheck").doFirst { showFormatHelp.invoke() }
 tasks.getByPath("loadKtlintReporters").dependsOn("ktlintReset")
 
 ktlint {
-    version.set("0.47.1")
+    version.set("0.51.1")
     android.set(true)
     ignoreFailures.set(false)
     disabledRules.set(
@@ -234,22 +237,21 @@ play {
 }
 
 dependencies {
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("androidx.recyclerview:recyclerview:1.3.1")
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
-    implementation("androidx.fragment:fragment-ktx:1.6.1")
+    implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("androidx.recyclerview:recyclerview:1.4.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.2.0")
+    implementation("androidx.fragment:fragment-ktx:1.8.6")
     implementation("androidx.documentfile:documentfile:1.0.1")
-    implementation("com.google.android.material:material:1.9.0")
+    implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.preference:preference-ktx:1.2.1")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
     implementation("io.coil-kt:coil:2.2.2")
     implementation("androidx.core:core-splashscreen:1.0.1")
-    implementation("androidx.window:window:1.2.0-beta03")
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("androidx.window:window:1.3.0")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
-    implementation("androidx.navigation:navigation-fragment-ktx:2.7.4")
-    implementation("androidx.navigation:navigation-ui-ktx:2.7.4")
+    implementation("androidx.navigation:navigation-fragment-ktx:2.8.7")
+    implementation("androidx.navigation:navigation-ui-ktx:2.8.7")
     implementation("info.debatty:java-string-similarity:2.0.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0")
 }
