@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 citron Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cinttypes>
@@ -156,17 +157,32 @@ bool ArmNce::HandleGuestAlignmentFault(GuestContext* guest_ctx, void* raw_info, 
 
 bool ArmNce::HandleGuestAccessFault(GuestContext* guest_ctx, void* raw_info, void* raw_context) {
     auto* info = static_cast<siginfo_t*>(raw_info);
+    const u64 fault_addr = reinterpret_cast<u64>(info->si_addr);
+    auto& memory = guest_ctx->system->ApplicationMemory();
 
-    // Try to handle an invalid access.
-    // TODO: handle accesses which split a page?
-    const Common::ProcessAddress addr =
-        (reinterpret_cast<u64>(info->si_addr) & ~Memory::CITRON_PAGEMASK);
-    if (guest_ctx->system->ApplicationMemory().InvalidateNCE(addr, Memory::CITRON_PAGESIZE)) {
-        // We handled the access successfully and are returning to guest code.
+    // Get the ArmNce instance from the guest context
+    ArmNce* nce = guest_ctx->parent;
+
+    // Check TLB first with proper synchronization
+    if (TlbEntry* entry = nce->FindTlbEntry(fault_addr)) {
+        if (!entry->writable && info->si_code == SEGV_ACCERR) {
+            return HandleFailedGuestFault(guest_ctx, raw_info, raw_context);
+        }
         return true;
     }
 
-    // We couldn't handle the access.
+    // TLB miss handling
+    if (memory.InvalidateNCE(fault_addr, Memory::CITRON_PAGESIZE)) {
+        // Get the host address directly since GetHostAddressInfo isn't available
+        const u64 host_addr = reinterpret_cast<u64>(memory.GetPointer(fault_addr));
+        const bool writable = true; // Default to writable for now
+
+        if (host_addr) {
+            nce->AddTlbEntry(fault_addr, host_addr, Memory::CITRON_PAGESIZE, writable);
+            return true;
+        }
+    }
+
     return HandleFailedGuestFault(guest_ctx, raw_info, raw_context);
 }
 
@@ -375,6 +391,91 @@ void ArmNce::ClearInstructionCache() {
 
 void ArmNce::InvalidateCacheRange(u64 addr, std::size_t size) {
     this->ClearInstructionCache();
+}
+
+TlbEntry* ArmNce::FindTlbEntry(u64 guest_addr) {
+    std::lock_guard lock(m_tlb_mutex);
+
+    const size_t set_index = GetTlbSetIndex(guest_addr);
+    const size_t set_start = set_index * TLB_WAYS;
+
+    for (size_t i = 0; i < TLB_WAYS; i++) {
+        TlbEntry& entry = m_tlb[set_start + i];
+        if (entry.valid &&
+            guest_addr >= entry.guest_addr &&
+            guest_addr < (entry.guest_addr + entry.size)) {
+            UpdateTlbEntryStats(entry);
+            return &entry;
+        }
+    }
+    return nullptr;
+}
+
+void ArmNce::AddTlbEntry(u64 guest_addr, u64 host_addr, u32 size, bool writable) {
+    std::lock_guard lock(m_tlb_mutex);
+
+    const size_t set_index = GetTlbSetIndex(guest_addr);
+    const size_t set_start = set_index * TLB_WAYS;
+
+    // Find replacement entry using enhanced replacement policy
+    const size_t replace_idx = FindReplacementEntry(set_start);
+
+    m_tlb[replace_idx] = {
+        .guest_addr = guest_addr & ~(size - 1),
+        .host_addr = host_addr & ~(size - 1),
+        .size = size,
+        .valid = true,
+        .writable = writable,
+        .last_access_time = ++m_tlb_access_counter,
+        .access_count = 1
+    };
+}
+
+size_t ArmNce::GetTlbSetIndex(u64 guest_addr) const {
+    // Improved set index calculation to reduce conflicts
+    return ((guest_addr >> 12) ^ (guest_addr >> 18)) % TLB_SETS;
+}
+
+size_t ArmNce::FindReplacementEntry(size_t set_start) {
+    u64 oldest_access = std::numeric_limits<u64>::max();
+    size_t replace_idx = set_start;
+
+    // Find invalid entry first
+    for (size_t i = 0; i < TLB_WAYS; i++) {
+        const size_t idx = set_start + i;
+        if (!m_tlb[idx].valid) {
+            return idx;
+        }
+    }
+
+    // Otherwise use LRU with access frequency consideration
+    for (size_t i = 0; i < TLB_WAYS; i++) {
+        const size_t idx = set_start + i;
+        const TlbEntry& entry = m_tlb[idx];
+
+        // Factor in both access time and frequency
+        u64 weight = entry.last_access_time + (entry.access_count << 8);
+        if (weight < oldest_access) {
+            oldest_access = weight;
+            replace_idx = idx;
+        }
+    }
+
+    return replace_idx;
+}
+
+void ArmNce::UpdateTlbEntryStats(TlbEntry& entry) {
+    entry.last_access_time = ++m_tlb_access_counter;
+    if (entry.access_count < std::numeric_limits<u32>::max()) {
+        entry.access_count++;
+    }
+}
+
+void ArmNce::InvalidateTlb() {
+    std::lock_guard lock(m_tlb_mutex);
+    for (auto& entry : m_tlb) {
+        entry.valid = false;
+    }
 }
 
 } // namespace Core

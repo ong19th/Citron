@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 citron Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
 #include <mutex>
+#include <array>
 
 #include "core/arm/arm_interface.h"
 #include "core/arm/nce/guest_context.h"
@@ -15,6 +17,21 @@ class Memory;
 namespace Core {
 
 class System;
+
+struct TlbEntry {
+    u64 guest_addr;
+    u64 host_addr;
+    u32 size;
+    bool valid;
+    bool writable;
+    u64 last_access_time; // For LRU tracking
+    u32 access_count;     // For access frequency tracking
+};
+
+// Improved TLB configuration
+constexpr size_t TLB_SETS = 64;     // Number of sets
+constexpr size_t TLB_WAYS = 8;      // Ways per set
+constexpr size_t TLB_SIZE = TLB_SETS * TLB_WAYS;
 
 class ArmNce final : public ArmInterface {
 public:
@@ -90,6 +107,24 @@ public:
 
     // Stack for signal processing.
     std::unique_ptr<u8[]> m_stack{};
+
+    // Enhanced TLB implementation
+    std::array<TlbEntry, TLB_SIZE> m_tlb{};
+    std::mutex m_tlb_mutex;
+    u64 m_tlb_access_counter{0};
+
+    // TLB helper functions
+    TlbEntry* FindTlbEntry(u64 guest_addr);
+    void AddTlbEntry(u64 guest_addr, u64 host_addr, u32 size, bool writable);
+    void InvalidateTlb();
+    size_t GetTlbSetIndex(u64 guest_addr) const;
+    size_t FindReplacementEntry(size_t set_start);
+    void UpdateTlbEntryStats(TlbEntry& entry);
+
+    // Thread context caching
+    std::mutex m_context_mutex;
+    Kernel::KThread* m_last_thread{nullptr};
+    GuestContext m_cached_ctx{};
 };
 
 } // namespace Core
