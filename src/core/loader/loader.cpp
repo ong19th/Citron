@@ -19,6 +19,10 @@
 #include "core/loader/nso.h"
 #include "core/loader/nsp.h"
 #include "core/loader/xci.h"
+#include "core/hle/service/am/am.h"
+#include "core/hle/service/filesystem/filesystem.h"
+#include "core/file_sys/registered_cache.h"
+#include "core/file_sys/content_archive.h"
 
 namespace Loader {
 
@@ -247,6 +251,20 @@ static std::unique_ptr<AppLoader> GetFileLoader(Core::System& system, FileSys::V
 std::unique_ptr<AppLoader> GetLoader(Core::System& system, FileSys::VirtualFile file,
                                      u64 program_id, std::size_t program_index) {
     if (!file) {
+        return nullptr;
+    }
+
+    // Check if firmware is available
+    constexpr u64 MiiEditId = 0x0100000000001009; // Mii Edit applet ID
+    auto bis_system = system.GetFileSystemController().GetSystemNANDContents();
+    if (bis_system) {
+        auto mii_applet_nca = bis_system->GetEntry(MiiEditId, FileSys::ContentRecordType::Program);
+        if (!mii_applet_nca) {
+            LOG_ERROR(Loader, "Firmware is required to launch games but is not available");
+            return nullptr;
+        }
+    } else {
+        LOG_ERROR(Loader, "System NAND contents not available");
         return nullptr;
     }
 

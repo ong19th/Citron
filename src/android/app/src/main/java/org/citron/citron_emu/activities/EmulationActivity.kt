@@ -4,6 +4,7 @@
 package org.citron.citron_emu.activities
 
 import android.annotation.SuppressLint
+import android.app.AlertDialog
 import android.app.PendingIntent
 import android.app.PictureInPictureParams
 import android.app.RemoteAction
@@ -79,6 +80,19 @@ class EmulationActivity : AppCompatActivity(), SensorEventListener {
         ThemeHelper.setTheme(this)
 
         super.onCreate(savedInstanceState)
+
+        // Check if firmware is available
+        if (!NativeLibrary.isFirmwareAvailable() || !NativeLibrary.checkFirmwarePresence()) {
+            AlertDialog.Builder(this)
+                .setTitle(R.string.firmware_missing_title)
+                .setMessage(R.string.firmware_missing_message)
+                .setPositiveButton(R.string.ok) { _, _ ->
+                    finish()
+                }
+                .setCancelable(false)
+                .show()
+            return
+        }
 
         // Add license verification at the start
         LicenseVerifier.verifyLicense(this)

@@ -296,6 +296,9 @@ public:
     void ReloadKeys();
     bool AreKeysLoaded() const;
 
+    // Check if firmware is installed by verifying essential keys
+    bool IsFirmwareAvailable() const;
+
 private:
     KeyManager();
 

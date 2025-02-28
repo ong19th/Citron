@@ -4787,19 +4787,24 @@ void GMainWindow::OnCheckFirmwareDecryption() {
 }
 
 bool GMainWindow::CheckFirmwarePresence() {
-    constexpr u64 MiiEditId = static_cast<u64>(Service::AM::AppletProgramId::MiiEdit);
+    constexpr u64 MiiEditId = 0x0100000000001009; // Mii Edit applet ID
+    constexpr u64 QLaunchId = 0x0100000000001000; // Home Menu applet ID
 
     auto bis_system = system->GetFileSystemController().GetSystemNANDContents();
     if (!bis_system) {
         return false;
     }
 
+    // Check for essential system applets
     auto mii_applet_nca = bis_system->GetEntry(MiiEditId, FileSys::ContentRecordType::Program);
-    if (!mii_applet_nca) {
+    auto qlaunch_nca = bis_system->GetEntry(QLaunchId, FileSys::ContentRecordType::Program);
+
+    if (!mii_applet_nca || !qlaunch_nca) {
         return false;
     }
 
-    return true;
+    // Also check for essential keys
+    return Core::Crypto::KeyManager::Instance().IsFirmwareAvailable();
 }
 
 void GMainWindow::SetFirmwareVersion() {

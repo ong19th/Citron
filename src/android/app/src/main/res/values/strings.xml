@@ -23,6 +23,9 @@
     <string name="keys">Keys</string>
     <string name="keys_description">Select your &lt;b>prod.keys&lt;/b> file with the button below.</string>
     <string name="select_keys">Select Keys</string>
+    <string name="firmware_missing_title">Missing Firmware</string>
+    <string name="firmware_missing_message">Firmware is required to launch games.\n\nPlease install firmware by placing your Switch firmware files in the appropriate location.</string>
+    <string name="ok">OK</string>
     <string name="games">Games</string>
     <string name="games_description">Select your &lt;b>Games&lt;/b> folder with the button below.</string>
     <string name="done">Done</string>
