@@ -480,45 +480,9 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
     CollectPhysicalMemoryInfo();
     CollectToolingInfo();
 
+    // Set must_emulate_scaled_formats to false for Qualcomm and Turnip drivers
     if (is_qualcomm || is_turnip) {
-        LOG_WARNING(Render_Vulkan,
-                    "Qualcomm and Turnip drivers have broken VK_EXT_custom_border_color");
-        RemoveExtensionFeature(extensions.custom_border_color, features.custom_border_color,
-                               VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
-    }
-
-    if (is_qualcomm) {
-        must_emulate_scaled_formats = true;
-
-        LOG_WARNING(Render_Vulkan, "Qualcomm drivers have broken VK_EXT_extended_dynamic_state");
-        RemoveExtensionFeature(extensions.extended_dynamic_state, features.extended_dynamic_state,
-                               VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME);
-
-        LOG_WARNING(Render_Vulkan,
-                    "Qualcomm drivers have a slow VK_KHR_push_descriptor implementation");
-        RemoveExtension(extensions.push_descriptor, VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
-
-#if defined(ANDROID) && defined(ARCHITECTURE_arm64)
-        // Patch the driver to enable BCn textures.
-        const auto major = (properties.properties.driverVersion >> 24) << 2;
-        const auto minor = (properties.properties.driverVersion >> 12) & 0xFFFU;
-        const auto vendor = properties.properties.vendorID;
-        const auto patch_status = adrenotools_get_bcn_type(major, minor, vendor);
-
-        if (patch_status == ADRENOTOOLS_BCN_PATCH) {
-            LOG_INFO(Render_Vulkan, "Patching Adreno driver to support BCn texture formats");
-            if (adrenotools_patch_bcn(
-                    reinterpret_cast<void*>(dld.vkGetPhysicalDeviceFormatProperties))) {
-                OverrideBcnFormats(format_properties);
-            } else {
-                LOG_ERROR(Render_Vulkan, "Patch failed! Driver code may now crash");
-            }
-        } else if (patch_status == ADRENOTOOLS_BCN_BLOB) {
-            LOG_INFO(Render_Vulkan, "Adreno driver supports BCn textures without patches");
-        } else {
-            LOG_WARNING(Render_Vulkan, "Adreno driver can't be patched to enable BCn textures");
-        }
-#endif
+        must_emulate_scaled_formats = false;
     }
 
     if (is_arm) {
