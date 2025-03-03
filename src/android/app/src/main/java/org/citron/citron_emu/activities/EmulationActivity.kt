@@ -82,7 +82,7 @@ class EmulationActivity : AppCompatActivity(), SensorEventListener {
         super.onCreate(savedInstanceState)
 
         // Check if firmware is available
-        if (!NativeLibrary.isFirmwareAvailable() || !NativeLibrary.checkFirmwarePresence()) {
+        if (!NativeLibrary.isFirmwareAvailable()) {
             AlertDialog.Builder(this)
                 .setTitle(R.string.firmware_missing_title)
                 .setMessage(R.string.firmware_missing_message)
