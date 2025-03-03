@@ -14,7 +14,7 @@ include(CTest)
 
 # Disable Warnings as Errors for MSVC
 if (MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /WX-")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /WX- /std:c++latest /await")
 endif()
 
 # Check if SDL2::SDL2 target exists; if not, create an alias
