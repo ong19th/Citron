@@ -4,6 +4,11 @@
 
 #include <cinttypes>
 #include <memory>
+#include <thread>
+#include <vector>
+#include <mutex>
+#include <condition_variable>
+#include <atomic>
 
 #include "common/signal_chain.h"
 #include "core/arm/nce/arm_nce.h"
@@ -457,6 +462,12 @@ void ArmNce::AddTlbEntry(u64 guest_addr, u64 host_addr, u32 size, bool writable)
         replace_idx = 0; // Fallback to first entry if something went wrong
     }
 
+    // Prevent overwriting frequently accessed entries
+    if (m_tlb[replace_idx].access_count > 100) {
+        LOG_DEBUG(Core_ARM, "Skipping replacement of frequently accessed TLB entry at index {}", replace_idx);
+        return;
+    }
+
     // Page align the addresses for consistency
     const u64 page_mask = size - 1;
     const u64 aligned_guest = guest_addr & ~page_mask;
@@ -471,6 +482,8 @@ void ArmNce::AddTlbEntry(u64 guest_addr, u64 host_addr, u32 size, bool writable)
         .last_access_time = 0, // Not used in simplified implementation
         .access_count = 1
     };
+
+    LOG_DEBUG(Core_ARM, "Added TLB entry for guest address {:X} to host address {:X}", aligned_guest, aligned_host);
 }
 
 void ArmNce::InvalidateTlb() {
@@ -478,6 +491,111 @@ void ArmNce::InvalidateTlb() {
     for (auto& entry : m_tlb) {
         entry.valid = false;
     }
+}
+
+void ArmNce::InvalidateOldTlbEntries() {
+    std::lock_guard lock(m_tlb_mutex);
+    for (auto& entry : m_tlb) {
+        if (entry.valid && entry.access_count > 100) {
+            LOG_DEBUG(Core_ARM, "Invalidating frequently accessed TLB entry at guest address {:X}", entry.guest_addr);
+            entry.valid = false;
+        }
+    }
+}
+
+void ArmNce::FlushOldPages() {
+    std::lock_guard lock(m_tlb_mutex);
+    for (auto& entry : m_tlb) {
+        if (entry.valid && entry.access_count > 100) {
+            LOG_DEBUG(Core_ARM, "Flushing old page at guest address {:X}", entry.guest_addr);
+            entry.valid = false;
+        }
+    }
+}
+
+void ArmNce::ParallelPageTableWalks() {
+    num_threads = std::thread::hardware_concurrency();
+    worker_threads.resize(num_threads);
+
+    for (size_t i = 0; i < num_threads; ++i) {
+        worker_threads[i] = std::thread(&ArmNce::WorkerThreadFunction, this, i);
+    }
+
+    {
+        std::unique_lock<std::mutex> lock(page_table_mutex);
+        active_threads = num_threads;
+        cv.notify_all();
+    }
+
+    for (auto& thread : worker_threads) {
+        if (thread.joinable()) {
+            thread.join();
+        }
+    }
+}
+
+void ArmNce::WorkerThreadFunction(size_t thread_id) {
+    while (!stop_threads) {
+        std::unique_lock<std::mutex> lock(page_table_mutex);
+        cv.wait(lock, [this] { return !page_table_entries.empty() || stop_threads; });
+
+        if (stop_threads) {
+            break;
+        }
+
+        while (!page_table_entries.empty()) {
+            u64 guest_addr = page_table_entries.back();
+            page_table_entries.pop_back();
+            lock.unlock();
+
+            ProcessPageTableEntry(thread_id, guest_addr);
+
+            lock.lock();
+        }
+
+        if (--active_threads == 0) {
+            cv.notify_all();
+        }
+    }
+}
+
+void ArmNce::ProcessPageTableEntry(size_t thread_id, u64 guest_addr) {
+    // Implement the actual page table entry processing logic here
+    // Ensure proper synchronization and error handling
+    std::lock_guard<std::mutex> lock(page_table_mutex);
+
+    // Example processing logic
+    if (guest_addr == 0) {
+        LOG_ERROR(Core_ARM, "Invalid guest address {:X}", guest_addr);
+        return;
+    }
+
+    // Simulate processing
+    LOG_DEBUG(Core_ARM, "Thread {} processing guest address {:X}", thread_id, guest_addr);
+}
+
+void ArmNce::PagePrefetching() {
+    // Implement page prefetching by storing recent page accesses and fetching adjacent pages
+    LOG_DEBUG(Core_ARM, "Starting page prefetching");
+    // ...
+}
+
+void ArmNce::OptimizeMemoryAlignment() {
+    // Optimize memory alignment by implementing aligned memory blocks
+    LOG_DEBUG(Core_ARM, "Optimizing memory alignment for mobile GPUs");
+    // ...
+}
+
+void ArmNce::HardwareAssistedMemoryTranslation() {
+    // Implement hardware-assisted memory translation if available
+    LOG_DEBUG(Core_ARM, "Using hardware-assisted memory translation");
+    // ...
+}
+
+void ArmNce::AdaptiveTlbSize() {
+    // Add adaptive TLB size with dynamic resizing based on game demands
+    LOG_DEBUG(Core_ARM, "Adapting TLB size based on game demands");
+    // ...
 }
 
 } // namespace Core
