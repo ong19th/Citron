@@ -62,6 +62,11 @@ public:
     void LockThread(Kernel::KThread* thread) override;
     void UnlockThread(Kernel::KThread* thread) override;
 
+    // Method to provide access to TLB entries
+    const std::array<TlbEntry, TLB_SIZE>& GetTlbEntries() const {
+        return m_tlb;
+    }
+
 protected:
     const Kernel::DebugWatchpoint* HaltedWatchpoint() const override {
         return nullptr;
@@ -109,8 +114,8 @@ public:
     std::unique_ptr<u8[]> m_stack{};
 
     // Enhanced TLB implementation
-    std::array<TlbEntry, TLB_SIZE> m_tlb{};
-    std::mutex m_tlb_mutex;
+    std::array<TlbEntry, TLB_SIZE> m_tlb{}; // Declare m_tlb
+    std::mutex m_tlb_mutex; // Declare m_tlb_mutex
     u64 m_tlb_access_counter{0};
 
     // TLB helper functions
@@ -120,6 +125,7 @@ public:
     size_t GetTlbSetIndex(u64 guest_addr) const;
     size_t FindReplacementEntry(size_t set_start);
     void UpdateTlbEntryStats(TlbEntry& entry);
+    void StartTlbInvalidationTimer();
 
     // Thread context caching
     std::mutex m_context_mutex;
