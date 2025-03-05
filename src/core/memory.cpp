@@ -1151,4 +1151,51 @@ bool Memory::InvalidateSeparateHeap(void* fault_address) {
 #endif
 }
 
+bool Memory::Remap(u64 guest_addr, u32 size) {
+    // Unmap the old address
+    UnmapRegion(*impl->current_page_table, guest_addr, size, false);
+
+    // Reclaim memory from unreferenced pages
+    ReclaimUnusedMemory();
+
+    // Allocate new memory
+    void* new_memory = std::malloc(size);
+    if (!new_memory) {
+        LOG_ERROR(Core_Memory, "Failed to allocate new memory for remapping address {:X}", guest_addr);
+        return false;
+    }
+
+    // Map the new memory to the guest address
+    MapMemoryRegion(*impl->current_page_table, guest_addr, size, reinterpret_cast<u64>(new_memory), Common::MemoryPermission::ReadWrite, false);
+
+    // Verify the mapping
+    if (GetPointer(guest_addr) != nullptr) {
+        LOG_INFO(Core_Memory, "Successfully remapped address {:X}", guest_addr);
+        return true;
+    } else {
+        LOG_ERROR(Core_Memory, "Failed to remap address {:X}", guest_addr);
+        std::free(new_memory);
+        return false;
+    }
+}
+
+void Memory::ReclaimUnusedMemory() {
+    std::lock_guard lock(m_tlb_mutex);
+
+    for (auto& entry : m_tlb) {
+        if (entry.valid && entry.ref_count == 0) {
+            // Unmap the memory region
+            UnmapRegion(*impl->current_page_table, entry.guest_addr, entry.size, false);
+
+            // Free the memory
+            std::free(reinterpret_cast<void*>(entry.host_addr));
+
+            // Invalidate the TLB entry
+            entry.valid = false;
+
+            LOG_INFO(Core_Memory, "Reclaimed memory for address {:X}", entry.guest_addr);
+        }
+    }
+}
+
 } // namespace Core::Memory
