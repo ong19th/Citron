@@ -1183,9 +1183,9 @@ bool Memory::Remap(u64 guest_addr, u32 size, ArmNce& arm_nce) {
 void Memory::ReclaimUnusedMemory(ArmNce& arm_nce) {
     std::lock_guard<std::mutex> lock(arm_nce.m_tlb_mutex); // Correct usage of lock_guard
 
-    const auto& tlb_entries = arm_nce.GetTlbEntries();
+    auto& tlb_entries = arm_nce.GetTlbEntries();
 
-    for (const auto& entry : tlb_entries) {
+    for (auto& entry : tlb_entries) {
         if (entry.valid && entry.ref_count == 0) {
             // Unmap the memory region
             UnmapRegion(*impl->current_page_table, entry.guest_addr, entry.size, false);
@@ -1194,7 +1194,7 @@ void Memory::ReclaimUnusedMemory(ArmNce& arm_nce) {
             std::free(reinterpret_cast<void*>(entry.host_addr));
 
             // Invalidate the TLB entry
-            const_cast<TlbEntry&>(entry).valid = false;
+            entry.valid = false;
 
             LOG_INFO(Core_Memory, "Reclaimed memory for address {:X}", entry.guest_addr);
         }

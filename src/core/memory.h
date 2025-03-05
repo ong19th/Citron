@@ -14,6 +14,7 @@
 #include "common/typed_address.h"
 #include "core/guest_memory.h"
 #include "core/hle/result.h"
+#include "core/arm/nce/arm_nce.h" // Include ArmNce header
 
 namespace Common {
 enum class MemoryPermission : u32;
@@ -50,6 +51,17 @@ enum : u64 {
 
     /// Application stack
     DEFAULT_STACK_SIZE = 0x100000,
+};
+
+struct TlbEntry {
+    u64 guest_addr;
+    u64 host_addr;
+    u32 size;
+    bool valid;
+    bool writable;
+    u32 access_count;
+    std::chrono::steady_clock::time_point last_access_time;
+    u32 ref_count= 0;
 };
 
 /// Central class that handles all memory operations and state.
@@ -503,9 +515,27 @@ public:
     bool Remap(u64 guest_addr, u32 size);
 
     /**
+     * Remaps a region of the emulated process address space.
+     *
+     * @param guest_addr The address to begin remapping at.
+     * @param size       The amount of bytes to remap.
+     * @param arm_nce    The ArmNce instance to use for TLB entries.
+     *
+     * @returns True if remapping is successful, false otherwise.
+     */
+    bool Remap(u64 guest_addr, u32 size, ArmNce& arm_nce);
+
+    /**
      * Reclaims memory from pages that are no longer used.
      */
     void ReclaimUnusedMemory();
+
+    /**
+     * Reclaims memory from pages that are no longer used.
+     *
+     * @param arm_nce The ArmNce instance to use for TLB entries.
+     */
+    void ReclaimUnusedMemory(ArmNce& arm_nce);
 
 private:
     Core::System& system;

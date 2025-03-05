@@ -15,6 +15,7 @@
 #include "video_core/memory_manager.h"
 #include "video_core/rasterizer_interface.h"
 #include "video_core/renderer_base.h"
+#include "core/arm/nce/arm_nce.h"
 
 namespace Tegra {
 using Tegra::Memory::GuestMemoryFlags;
@@ -785,3 +786,28 @@ u8* MemoryManager::GetSpan(const GPUVAddr src_addr, const std::size_t size) {
 }
 
 } // namespace Tegra
+
+namespace Core::Memory {
+
+void Memory::ReclaimUnusedMemory(ArmNce& arm_nce) {
+    std::lock_guard<std::mutex> lock(arm_nce.m_tlb_mutex); // Correct usage of lock_guard
+
+    const auto& tlb_entries = arm_nce.GetTlbEntries();
+
+    for (const auto& entry : tlb_entries) {
+        if (entry.valid && entry.ref_count == 0) {
+            // Unmap the memory region
+            UnmapRegion(*impl->current_page_table, entry.guest_addr, entry.size, false);
+
+            // Free the memory
+            std::free(reinterpret_cast<void*>(entry.host_addr));
+
+            // Invalidate the TLB entry
+            const_cast<TlbEntry&>(entry).valid = false;
+
+            LOG_INFO(Core_Memory, "Reclaimed memory for address {:X}", entry.guest_addr);
+        }
+    }
+}
+
+} // namespace Core::Memory
