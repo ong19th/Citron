@@ -68,7 +68,6 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Common, Memory)                                                                            \
     CLS(Core)                                                                                      \
     SUB(Core, ARM)                                                                                 \
-    SUB(Core, Memory)                                                                              \
     SUB(Core, Timing)                                                                              \
     CLS(Config)                                                                                    \
     CLS(Debug)                                                                                     \
