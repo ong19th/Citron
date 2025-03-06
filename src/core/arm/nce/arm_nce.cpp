@@ -277,7 +277,6 @@ void ArmNce::SetSvcArguments(std::span<const uint64_t, 8> args) {
 ArmNce::ArmNce(System& system, bool uses_wall_clock, std::size_t core_index)
     : ArmInterface{uses_wall_clock}, m_system{system}, m_core_index{core_index} {
     m_guest_ctx.system = &m_system;
-    StartTlbInvalidationTimer(); // Add this line
 }
 
 ArmNce::~ArmNce() = default;
@@ -425,6 +424,7 @@ TlbEntry* ArmNce::FindTlbEntry(u64 guest_addr) {
 }
 
 void ArmNce::AddTlbEntry(u64 guest_addr, u64 host_addr, u32 size, bool writable) {
+    // Validate addresses before proceeding
     if (!host_addr) {
         LOG_ERROR(Core_ARM, "Invalid host address for guest address {:X}", guest_addr);
         return;
@@ -432,10 +432,8 @@ void ArmNce::AddTlbEntry(u64 guest_addr, u64 host_addr, u32 size, bool writable)
 
     std::lock_guard lock(m_tlb_mutex);
 
-    size_t replace_idx = TLB_SIZE;
-    auto now = std::chrono::steady_clock::now();
-
     // First try to find an invalid entry
+    size_t replace_idx = TLB_SIZE;
     for (size_t i = 0; i < TLB_SIZE; i++) {
         if (!m_tlb[i].valid) {
             replace_idx = i;
@@ -443,26 +441,23 @@ void ArmNce::AddTlbEntry(u64 guest_addr, u64 host_addr, u32 size, bool writable)
         }
     }
 
-    // If no invalid entries, use LRU or access count policy
+    // If no invalid entries, use simple LRU
     if (replace_idx == TLB_SIZE) {
         u32 lowest_count = UINT32_MAX;
-        auto oldest_time = now;
         for (size_t i = 0; i < TLB_SIZE; i++) {
             if (m_tlb[i].access_count < lowest_count) {
                 lowest_count = m_tlb[i].access_count;
                 replace_idx = i;
             }
-            if (m_tlb[i].last_access_time < oldest_time) {
-                oldest_time = m_tlb[i].last_access_time;
-                replace_idx = i;
-            }
         }
     }
 
+    // Safety check
     if (replace_idx >= TLB_SIZE) {
-        replace_idx = 0;
+        replace_idx = 0; // Fallback to first entry if something went wrong
     }
 
+    // Page align the addresses for consistency
     const u64 page_mask = size - 1;
     const u64 aligned_guest = guest_addr & ~page_mask;
     const u64 aligned_host = host_addr & ~page_mask;
@@ -473,42 +468,16 @@ void ArmNce::AddTlbEntry(u64 guest_addr, u64 host_addr, u32 size, bool writable)
         .size = size,
         .valid = true,
         .writable = writable,
-        .access_count = 1,
-        .last_access_time = now // Update the access time
+        .last_access_time = 0, // Not used in simplified implementation
+        .access_count = 1
     };
 }
 
 void ArmNce::InvalidateTlb() {
     std::lock_guard lock(m_tlb_mutex);
-    auto now = std::chrono::steady_clock::now();
-    auto expiration_time = std::chrono::minutes(5); // Example: 5 minutes expiration
-
     for (auto& entry : m_tlb) {
-        if (entry.valid) {
-            if (entry.access_count > 1000 || (now - entry.last_access_time) > expiration_time) {
-                entry.valid = false;
-            }
-        }
+        entry.valid = false;
     }
 }
-
-void ArmNce::StartTlbInvalidationTimer() {
-    std::thread([this]() {
-        while (true) {
-            std::this_thread::sleep_for(std::chrono::minutes(1)); // Example: check every minute
-            this->InvalidateTlb();
-        }
-    }).detach();
-}
-
-struct TlbEntry {
-    u64 guest_addr;
-    u64 host_addr;
-    u32 size;
-    bool valid;
-    bool writable;
-    u32 access_count;
-    std::chrono::steady_clock::time_point last_access_time; // Add this line
-};
 
 } // namespace Core
