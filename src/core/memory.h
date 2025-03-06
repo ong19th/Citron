@@ -492,21 +492,6 @@ public:
 
     bool InvalidateSeparateHeap(void* fault_address);
 
-    /**
-     * Remaps a region of the emulated process address space.
-     *
-     * @param guest_addr The address to begin remapping at.
-     * @param size       The amount of bytes to remap.
-     *
-     * @returns True if remapping is successful, false otherwise.
-     */
-    bool Remap(u64 guest_addr, u32 size);
-
-    /**
-     * Reclaims memory from pages that are no longer used.
-     */
-    void ReclaimUnusedMemory();
-
 private:
     Core::System& system;
 

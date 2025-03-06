@@ -170,54 +170,29 @@ bool ArmNce::HandleGuestAccessFault(GuestContext* guest_ctx, void* raw_info, voi
     // Get the ArmNce instance from the guest context
     ArmNce* nce = guest_ctx->parent;
 
-    // Define a maximum retry count to prevent infinite loops
-    constexpr int max_retries = 3;
-    int retry_count = 0;
-
-    while (retry_count < max_retries) {
-        // Check TLB first
-        if (TlbEntry* entry = nce->FindTlbEntry(fault_addr)) {
-            if (!entry->writable && info->si_code == SEGV_ACCERR) {
-                LOG_DEBUG(Core_ARM, "Write to read-only memory at {:X}", fault_addr);
-                return HandleFailedGuestFault(guest_ctx, raw_info, raw_context);
-            }
-            return true;
-        }
-
-        // TLB miss handling with better error checking
-        if (memory.InvalidateNCE(fault_addr, Memory::CITRON_PAGESIZE)) {
-            const u64 host_addr = reinterpret_cast<u64>(memory.GetPointer(fault_addr));
-
-            if (host_addr) {
-                nce->AddTlbEntry(fault_addr, host_addr, Memory::CITRON_PAGESIZE, true);
-                return true;
-            } else {
-                LOG_DEBUG(Core_ARM, "Failed to get host address for guest address {:X}", fault_addr);
-            }
-        } else {
-            LOG_DEBUG(Core_ARM, "Memory invalidation failed for address {:X}", fault_addr);
-        }
-
-        // Trigger an immediate remap if lookup fails
-        if (!memory.Remap(fault_addr, Memory::CITRON_PAGESIZE)) {
-            LOG_ERROR(Core_ARM, "Immediate remap failed for address {:X}", fault_addr);
+    // Check TLB first
+    if (TlbEntry* entry = nce->FindTlbEntry(fault_addr)) {
+        if (!entry->writable && info->si_code == SEGV_ACCERR) {
+            LOG_DEBUG(Core_ARM, "Write to read-only memory at {:X}", fault_addr);
             return HandleFailedGuestFault(guest_ctx, raw_info, raw_context);
         }
+        return true;
+    }
 
-        // Retry adding the TLB entry after remap
+    // TLB miss handling with better error checking
+    if (memory.InvalidateNCE(fault_addr, Memory::CITRON_PAGESIZE)) {
         const u64 host_addr = reinterpret_cast<u64>(memory.GetPointer(fault_addr));
+
         if (host_addr) {
             nce->AddTlbEntry(fault_addr, host_addr, Memory::CITRON_PAGESIZE, true);
             return true;
         } else {
-            LOG_ERROR(Core_ARM, "Failed to get host address after remap for guest address {:X}", fault_addr);
+            LOG_DEBUG(Core_ARM, "Failed to get host address for guest address {:X}", fault_addr);
         }
-
-        // Increment the retry count
-        retry_count++;
+    } else {
+        LOG_DEBUG(Core_ARM, "Memory invalidation failed for address {:X}", fault_addr);
     }
 
-    // If all retries fail, handle the fault as a failed guest fault
     return HandleFailedGuestFault(guest_ctx, raw_info, raw_context);
 }
 
@@ -443,7 +418,6 @@ TlbEntry* ArmNce::FindTlbEntry(u64 guest_addr) {
             if (entry.access_count < 1000) { // Prevent overflow
                 entry.access_count++;
             }
-            entry.ref_count++; // Increment reference count
             return &entry;
         }
     }
@@ -500,8 +474,7 @@ void ArmNce::AddTlbEntry(u64 guest_addr, u64 host_addr, u32 size, bool writable)
         .valid = true,
         .writable = writable,
         .access_count = 1,
-        .last_access_time = now,
-        .ref_count = 1 // Initialize reference count
+        .last_access_time = now // Update the access time
     };
 }
 
@@ -536,7 +509,6 @@ struct TlbEntry {
     bool writable;
     u32 access_count;
     std::chrono::steady_clock::time_point last_access_time; // Add this line
-    u32 ref_count; // Add this line
 };
 
 } // namespace Core
