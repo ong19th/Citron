@@ -199,7 +199,7 @@ bool ArmNce::HandleGuestAccessFault(GuestContext* guest_ctx, void* raw_info, voi
         }
 
         // Trigger an immediate remap if lookup fails
-        if (!memory.Remap(fault_addr, Memory::CITRON_PAGESIZE, *nce)) {
+        if (!memory.Remap(fault_addr, Memory::CITRON_PAGESIZE)) {
             LOG_ERROR(Core_ARM, "Immediate remap failed for address {:X}", fault_addr);
             return HandleFailedGuestFault(guest_ctx, raw_info, raw_context);
         }
@@ -430,7 +430,7 @@ void ArmNce::InvalidateCacheRange(u64 addr, std::size_t size) {
 }
 
 TlbEntry* ArmNce::FindTlbEntry(u64 guest_addr) {
-    std::lock_guard<std::mutex> lock(m_tlb_mutex); // Correct usage of lock_guard
+    std::lock_guard lock(m_tlb_mutex);
 
     // Simple linear search - more reliable than complex indexing
     for (size_t i = 0; i < TLB_SIZE; i++) {
@@ -456,7 +456,7 @@ void ArmNce::AddTlbEntry(u64 guest_addr, u64 host_addr, u32 size, bool writable)
         return;
     }
 
-    std::lock_guard<std::mutex> lock(m_tlb_mutex); // Correct usage of lock_guard
+    std::lock_guard lock(m_tlb_mutex);
 
     size_t replace_idx = TLB_SIZE;
     auto now = std::chrono::steady_clock::now();
@@ -506,7 +506,7 @@ void ArmNce::AddTlbEntry(u64 guest_addr, u64 host_addr, u32 size, bool writable)
 }
 
 void ArmNce::InvalidateTlb() {
-    std::lock_guard<std::mutex> lock(m_tlb_mutex); // Correct usage of lock_guard
+    std::lock_guard lock(m_tlb_mutex);
     auto now = std::chrono::steady_clock::now();
     auto expiration_time = std::chrono::minutes(5); // Example: 5 minutes expiration
 

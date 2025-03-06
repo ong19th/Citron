@@ -27,7 +27,6 @@
 #include "video_core/host1x/gpu_device_memory_manager.h"
 #include "video_core/host1x/host1x.h"
 #include "video_core/rasterizer_download_area.h"
-#include "core/arm/nce/arm_nce.h"
 
 namespace Core::Memory {
 
@@ -1152,7 +1151,7 @@ bool Memory::InvalidateSeparateHeap(void* fault_address) {
 #endif
 }
 
-bool Memory::Remap(u64 guest_addr, u32 size, ArmNce& arm_nce) {
+bool Memory::Remap(u64 guest_addr, u32 size) {
     // Unmap the old address
     UnmapRegion(*impl->current_page_table, guest_addr, size, false);
 
@@ -1162,7 +1161,7 @@ bool Memory::Remap(u64 guest_addr, u32 size, ArmNce& arm_nce) {
     // Allocate new memory
     void* new_memory = std::malloc(size);
     if (!new_memory) {
-        LOG_ERROR(Core_ARM, "Failed to allocate new memory for remapping address {:X}", guest_addr);
+        LOG_ERROR(Core_Memory, "Failed to allocate new memory for remapping address {:X}", guest_addr);
         return false;
     }
 
@@ -1171,7 +1170,7 @@ bool Memory::Remap(u64 guest_addr, u32 size, ArmNce& arm_nce) {
 
     // Verify the mapping
     if (GetPointer(guest_addr) != nullptr) {
-        LOG_INFO(Core_ARM, "Successfully remapped address {:X}", guest_addr);
+        LOG_INFO(Core_Memory, "Successfully remapped address {:X}", guest_addr);
         return true;
     } else {
         LOG_ERROR(Core_Memory, "Failed to remap address {:X}", guest_addr);
@@ -1180,12 +1179,10 @@ bool Memory::Remap(u64 guest_addr, u32 size, ArmNce& arm_nce) {
     }
 }
 
-void Memory::ReclaimUnusedMemory(ArmNce& arm_nce) {
-    std::lock_guard<std::mutex> lock(arm_nce.m_tlb_mutex); // Correct usage of lock_guard
+void Memory::ReclaimUnusedMemory() {
+    std::lock_guard lock(m_tlb_mutex);
 
-    const auto& tlb_entries = arm_nce.GetTlbEntries();
-
-    for (const auto& entry : tlb_entries) {
+    for (auto& entry : m_tlb) {
         if (entry.valid && entry.ref_count == 0) {
             // Unmap the memory region
             UnmapRegion(*impl->current_page_table, entry.guest_addr, entry.size, false);
@@ -1194,7 +1191,7 @@ void Memory::ReclaimUnusedMemory(ArmNce& arm_nce) {
             std::free(reinterpret_cast<void*>(entry.host_addr));
 
             // Invalidate the TLB entry
-            const_cast<TlbEntry&>(entry).valid = false;
+            entry.valid = false;
 
             LOG_INFO(Core_Memory, "Reclaimed memory for address {:X}", entry.guest_addr);
         }
