@@ -20,6 +20,7 @@
 #include <frontend_common/content_manager.h>
 #include <jni.h>
 
+#include "common/android/multiplayer/multiplayer.h"
 #include "common/android/android_common.h"
 #include "common/android/id_cache.h"
 #include "common/detached_tasks.h"
@@ -868,6 +869,85 @@ jboolean Java_org_citron_citron_1emu_NativeLibrary_areKeysPresent(JNIEnv* env, j
     auto& system = EmulationSession::GetInstance().System();
     system.GetFileSystemController().CreateFactories(*system.GetFilesystem());
     return ContentManager::AreKeysPresent();
+}
+
+JNIEXPORT jint JNICALL Java_org_citron_citron_1emu_network_NetPlayManager_netPlayCreateRoom(
+        JNIEnv* env, [[maybe_unused]] jobject obj, jstring ipaddress, jint port,
+        jstring username, jstring password, jstring room_name, jint max_players) {
+    return static_cast<jint>(
+            NetPlayCreateRoom(Common::Android::GetJString(env, ipaddress), port,
+                              Common::Android::GetJString(env, username), Common::Android::GetJString(env, password),
+                              Common::Android::GetJString(env, room_name), max_players));
+}
+
+JNIEXPORT jint JNICALL Java_org_citron_citron_1emu_network_NetPlayManager_netPlayJoinRoom(
+        JNIEnv* env, [[maybe_unused]] jobject obj, jstring ipaddress, jint port,
+        jstring username, jstring password) {
+    return static_cast<jint>(
+            NetPlayJoinRoom(Common::Android::GetJString(env, ipaddress), port,
+                            Common::Android::GetJString(env, username), Common::Android::GetJString(env, password)));
+}
+
+JNIEXPORT jobjectArray JNICALL
+Java_org_citron_citron_1emu_network_NetPlayManager_netPlayRoomInfo(
+        JNIEnv* env, [[maybe_unused]] jobject obj) {
+    return Common::Android::ToJStringArray(env, NetPlayRoomInfo());
+}
+
+JNIEXPORT jboolean JNICALL
+Java_org_citron_citron_1emu_network_NetPlayManager_netPlayIsJoined(
+        [[maybe_unused]] JNIEnv* env, [[maybe_unused]] jobject obj) {
+    return NetPlayIsJoined();
+}
+
+JNIEXPORT jboolean JNICALL
+Java_org_citron_citron_1emu_network_NetPlayManager_netPlayIsHostedRoom(
+        [[maybe_unused]] JNIEnv* env, [[maybe_unused]] jobject obj) {
+    return NetPlayIsHostedRoom();
+}
+
+JNIEXPORT void JNICALL
+Java_org_citron_citron_1emu_network_NetPlayManager_netPlaySendMessage(
+        JNIEnv* env, [[maybe_unused]] jobject obj, jstring msg) {
+    NetPlaySendMessage(Common::Android::GetJString(env, msg));
+}
+
+JNIEXPORT void JNICALL Java_org_citron_citron_1emu_network_NetPlayManager_netPlayKickUser(
+        JNIEnv* env, [[maybe_unused]] jobject obj, jstring username) {
+    NetPlayKickUser(Common::Android::GetJString(env, username));
+}
+
+JNIEXPORT void JNICALL Java_org_citron_citron_1emu_network_NetPlayManager_netPlayLeaveRoom(
+        [[maybe_unused]] JNIEnv* env, [[maybe_unused]] jobject obj) {
+    NetPlayLeaveRoom();
+}
+
+JNIEXPORT jboolean JNICALL
+Java_org_citron_citron_1emu_network_NetPlayManager_netPlayIsModerator(
+        [[maybe_unused]] JNIEnv* env, [[maybe_unused]] jobject obj) {
+    return NetPlayIsModerator();
+}
+
+JNIEXPORT jobjectArray JNICALL
+Java_org_citron_citron_1emu_network_NetPlayManager_netPlayGetBanList(
+        JNIEnv* env, [[maybe_unused]] jobject obj) {
+    return Common::Android::ToJStringArray(env, NetPlayGetBanList());
+}
+
+JNIEXPORT void JNICALL Java_org_citron_citron_1emu_network_NetPlayManager_netPlayBanUser(
+        JNIEnv* env, [[maybe_unused]] jobject obj, jstring username) {
+    NetPlayBanUser(Common::Android::GetJString(env, username));
+}
+
+JNIEXPORT void JNICALL Java_org_citron_citron_1emu_network_NetPlayManager_netPlayUnbanUser(
+        JNIEnv* env, [[maybe_unused]] jobject obj, jstring username) {
+    NetPlayUnbanUser(Common::Android::GetJString(env, username));
+}
+
+JNIEXPORT void JNICALL
+Java_org_citron_citron_1emu_NativeLibrary_netPlayInit(
+        JNIEnv* env, [[maybe_unused]] jobject obj) {
+    NetworkInit(&EmulationSession::GetInstance().System().GetRoomNetwork());
 }
 
 } // extern "C"

@@ -40,12 +40,14 @@ import org.citron.citron_emu.NativeLibrary
 import org.citron.citron_emu.R
 import org.citron.citron_emu.CitronApplication
 import org.citron.citron_emu.databinding.ActivityEmulationBinding
+import org.citron.citron_emu.dialogs.NetPlayDialog
 import org.citron.citron_emu.features.input.NativeInput
 import org.citron.citron_emu.features.settings.model.BooleanSetting
 import org.citron.citron_emu.features.settings.model.IntSetting
 import org.citron.citron_emu.features.settings.model.Settings
 import org.citron.citron_emu.model.EmulationViewModel
 import org.citron.citron_emu.model.Game
+import org.citron.citron_emu.network.NetPlayManager
 import org.citron.citron_emu.utils.InputHandler
 import org.citron.citron_emu.utils.Log
 import org.citron.citron_emu.utils.MemoryUtil
@@ -422,6 +424,16 @@ class EmulationActivity : AppCompatActivity(), SensorEventListener {
         }
         setPictureInPictureParams(pictureInPictureParamsBuilder.build())
     }
+
+    fun displayMultiplayerDialog() {
+        val dialog = NetPlayDialog(this)
+        dialog.show()
+    }
+
+    fun addNetPlayMessages(type: Int, msg: String) {
+        NetPlayManager.addNetPlayMessage(type, msg)
+    }
+
 
     private var pictureInPictureReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent) {

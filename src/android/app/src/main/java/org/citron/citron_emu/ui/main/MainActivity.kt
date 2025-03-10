@@ -31,6 +31,7 @@ import org.citron.citron_emu.HomeNavigationDirections
 import org.citron.citron_emu.NativeLibrary
 import org.citron.citron_emu.R
 import org.citron.citron_emu.databinding.ActivityMainBinding
+import org.citron.citron_emu.dialogs.NetPlayDialog
 import org.citron.citron_emu.features.settings.model.Settings
 import org.citron.citron_emu.fragments.AddGameFolderDialogFragment
 import org.citron.citron_emu.fragments.ProgressDialogFragment
@@ -68,6 +69,7 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
         splashScreen.setKeepOnScreenCondition { !DirectoryInitialization.areDirectoriesReady }
 
         ThemeHelper.setTheme(this)
+        NativeLibrary.netPlayInit()
 
         super.onCreate(savedInstanceState)
 
@@ -155,6 +157,11 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
         }
 
         setInsets()
+    }
+
+    fun displayMultiplayerDialog() {
+        val dialog = NetPlayDialog(this)
+        dialog.show()
     }
 
     private fun checkKeys() {

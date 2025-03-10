@@ -271,6 +271,13 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                     true
                 }
 
+
+                R.id.menu_multiplayer -> {
+                    emulationActivity?.displayMultiplayerDialog()
+                    true
+                }
+
+
                 R.id.menu_controls -> {
                     val action = HomeNavigationDirections.actionGlobalSettingsActivity(
                         null,

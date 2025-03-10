@@ -5,6 +5,7 @@
 
 #include <future>
 #include <jni.h>
+#include <network/network.h>
 
 #include "video_core/rasterizer_interface.h"
 
@@ -108,5 +109,6 @@ jmethodID GetCitronDeviceGetSupportsVibration();
 jmethodID GetCitronDeviceVibrate();
 jmethodID GetCitronDeviceGetAxes();
 jmethodID GetCitronDeviceHasKeys();
-
-} // namespace Common::Android
+jmethodID GetAddNetPlayMessage();
+jmethodID ClearChat();
+} // namespace Android
