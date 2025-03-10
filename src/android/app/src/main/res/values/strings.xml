@@ -489,6 +489,7 @@
     <string name="multiplayer_unban">Unban</string>
     <string name="multiplayer_unban_message">Are you sure you want to unban %1$s?</string>
     <string name="multiplayer_ban">Ban User</string>
+    <string name="cancel">Cancel</string>
 
     <!-- Game properties -->
     <string name="info">Info</string>
@@ -1246,8 +1247,4 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     </string>
-    <string name="emulation_multiplayer">Multiplayer</string>
-    <string name="cancel">Cancel</string>
-    <string name="ok">Ok</string>
-
 </resources>
