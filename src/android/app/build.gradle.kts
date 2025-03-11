@@ -11,10 +11,10 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("kotlin-parcelize")
-    kotlin("plugin.serialization") version "1.9.20"
+    kotlin("plugin.serialization") version "2.1.20-RC2"
     id("androidx.navigation.safeargs.kotlin")
-    id("org.jlleitschuh.gradle.ktlint") version "11.4.0"
-    id("com.github.triplet.play") version "3.8.6"
+    id("org.jlleitschuh.gradle.ktlint") version "12.2.0"
+    id("com.github.triplet.play") version "3.12.1"
 }
 
 /**
@@ -29,19 +29,19 @@ android {
     namespace = "org.citron.citron_emu"
 
     compileSdkVersion = "android-35"
-    ndkVersion = "26.1.10909125"
+    ndkVersion = "29.0.13113456 rc1" // "26.1.10909125"
 
     buildFeatures {
         viewBinding = true
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = "21"
     }
 
     packaging {
@@ -55,7 +55,7 @@ android {
 
     defaultConfig {
         // TODO If this is ever modified, change application_id in strings.xml
-        applicationId = "org.citron.citron_emu"
+        applicationId = "com.antutu.ABenchMark"
         minSdk = 30
         //noinspection EditedTargetSdkVersion
         targetSdk = 35
@@ -161,7 +161,7 @@ android {
 
     externalNativeBuild {
         cmake {
-            version = "3.22.1"
+            version = "3.31.6"
             path = file("../../../CMakeLists.txt")
         }
     }
@@ -182,7 +182,7 @@ android {
                     "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
                 )
 
-                abiFilters("arm64-v8a", "x86_64")
+                abiFilters("arm64-v8a") // , "x86_64")
             }
         }
     }
@@ -203,7 +203,7 @@ tasks.getByPath("ktlintMainSourceSetCheck").doFirst { showFormatHelp.invoke() }
 tasks.getByPath("loadKtlintReporters").dependsOn("ktlintReset")
 
 ktlint {
-    version.set("0.47.1")
+    version.set("0.49.1")
     android.set(true)
     ignoreFailures.set(false)
     disabledRules.set(
@@ -228,24 +228,24 @@ play {
 }
 
 dependencies {
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("androidx.recyclerview:recyclerview:1.3.1")
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
-    implementation("androidx.fragment:fragment-ktx:1.6.1")
+    implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("androidx.recyclerview:recyclerview:1.4.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.2.1")
+    implementation("androidx.fragment:fragment-ktx:1.8.6")
     implementation("androidx.documentfile:documentfile:1.0.1")
-    implementation("com.google.android.material:material:1.9.0")
+    implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.preference:preference-ktx:1.2.1")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2")
-    implementation("io.coil-kt:coil:2.2.2")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
+    implementation("io.coil-kt:coil:2.7.0")
     implementation("androidx.core:core-splashscreen:1.0.1")
-    implementation("androidx.window:window:1.2.0-beta03")
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("androidx.window:window:1.3.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.2.1")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
-    implementation("androidx.navigation:navigation-fragment-ktx:2.7.4")
-    implementation("androidx.navigation:navigation-ui-ktx:2.7.4")
+    implementation("androidx.navigation:navigation-fragment-ktx:2.8.8")
+    implementation("androidx.navigation:navigation-ui-ktx:2.8.8")
     implementation("info.debatty:java-string-similarity:2.0.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 }
 
 fun runGitCommand(command: List<String>): String {

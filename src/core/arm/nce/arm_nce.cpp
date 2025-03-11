@@ -1,5 +1,4 @@
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
-// SPDX-FileCopyrightText: Copyright 2025 citron Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cinttypes>
@@ -144,55 +143,30 @@ bool ArmNce::HandleGuestAlignmentFault(GuestContext* guest_ctx, void* raw_info, 
     auto* fpctx = GetFloatingPointState(host_ctx);
     auto& memory = guest_ctx->system->ApplicationMemory();
 
-    // Log the alignment fault for debugging
-    LOG_DEBUG(Core_ARM, "Alignment fault at PC={:X}", host_ctx.pc);
-
-    // Try to handle the instruction
+    // Match and execute an instruction.
     auto next_pc = MatchAndExecuteOneInstruction(memory, &host_ctx, fpctx);
     if (next_pc) {
         host_ctx.pc = *next_pc;
         return true;
     }
 
-    // If we couldn't handle it, try to skip the instruction as a fallback
-    LOG_DEBUG(Core_ARM, "Could not handle alignment fault, skipping instruction");
-    host_ctx.pc += 4; // Skip to next instruction
-
-    // Return true to continue execution
-    return true;
+    // We couldn't handle the access.
+    return HandleFailedGuestFault(guest_ctx, raw_info, raw_context);
 }
 
 bool ArmNce::HandleGuestAccessFault(GuestContext* guest_ctx, void* raw_info, void* raw_context) {
     auto* info = static_cast<siginfo_t*>(raw_info);
-    const u64 fault_addr = reinterpret_cast<u64>(info->si_addr);
-    auto& memory = guest_ctx->system->ApplicationMemory();
 
-    // Get the ArmNce instance from the guest context
-    ArmNce* nce = guest_ctx->parent;
-
-    // Check TLB first
-    if (TlbEntry* entry = nce->FindTlbEntry(fault_addr)) {
-        if (!entry->writable && info->si_code == SEGV_ACCERR) {
-            LOG_DEBUG(Core_ARM, "Write to read-only memory at {:X}", fault_addr);
-            return HandleFailedGuestFault(guest_ctx, raw_info, raw_context);
-        }
+    // Try to handle an invalid access.
+    // TODO: handle accesses which split a page?
+    const Common::ProcessAddress addr =
+        (reinterpret_cast<u64>(info->si_addr) & ~Memory::CITRON_PAGEMASK);
+    if (guest_ctx->system->ApplicationMemory().InvalidateNCE(addr, Memory::CITRON_PAGESIZE)) {
+        // We handled the access successfully and are returning to guest code.
         return true;
     }
 
-    // TLB miss handling with better error checking
-    if (memory.InvalidateNCE(fault_addr, Memory::CITRON_PAGESIZE)) {
-        const u64 host_addr = reinterpret_cast<u64>(memory.GetPointer(fault_addr));
-
-        if (host_addr) {
-            nce->AddTlbEntry(fault_addr, host_addr, Memory::CITRON_PAGESIZE, true);
-            return true;
-        } else {
-            LOG_DEBUG(Core_ARM, "Failed to get host address for guest address {:X}", fault_addr);
-        }
-    } else {
-        LOG_DEBUG(Core_ARM, "Memory invalidation failed for address {:X}", fault_addr);
-    }
-
+    // We couldn't handle the access.
     return HandleFailedGuestFault(guest_ctx, raw_info, raw_context);
 }
 
@@ -401,83 +375,6 @@ void ArmNce::ClearInstructionCache() {
 
 void ArmNce::InvalidateCacheRange(u64 addr, std::size_t size) {
     this->ClearInstructionCache();
-}
-
-TlbEntry* ArmNce::FindTlbEntry(u64 guest_addr) {
-    std::lock_guard lock(m_tlb_mutex);
-
-    // Simple linear search - more reliable than complex indexing
-    for (size_t i = 0; i < TLB_SIZE; i++) {
-        TlbEntry& entry = m_tlb[i];
-        if (entry.valid &&
-            guest_addr >= entry.guest_addr &&
-            guest_addr < (entry.guest_addr + entry.size)) {
-
-            // Simple access tracking - just increment counter
-            if (entry.access_count < 1000) { // Prevent overflow
-                entry.access_count++;
-            }
-            return &entry;
-        }
-    }
-    return nullptr;
-}
-
-void ArmNce::AddTlbEntry(u64 guest_addr, u64 host_addr, u32 size, bool writable) {
-    // Validate addresses before proceeding
-    if (!host_addr) {
-        LOG_ERROR(Core_ARM, "Invalid host address for guest address {:X}", guest_addr);
-        return;
-    }
-
-    std::lock_guard lock(m_tlb_mutex);
-
-    // First try to find an invalid entry
-    size_t replace_idx = TLB_SIZE;
-    for (size_t i = 0; i < TLB_SIZE; i++) {
-        if (!m_tlb[i].valid) {
-            replace_idx = i;
-            break;
-        }
-    }
-
-    // If no invalid entries, use simple LRU
-    if (replace_idx == TLB_SIZE) {
-        u32 lowest_count = UINT32_MAX;
-        for (size_t i = 0; i < TLB_SIZE; i++) {
-            if (m_tlb[i].access_count < lowest_count) {
-                lowest_count = m_tlb[i].access_count;
-                replace_idx = i;
-            }
-        }
-    }
-
-    // Safety check
-    if (replace_idx >= TLB_SIZE) {
-        replace_idx = 0; // Fallback to first entry if something went wrong
-    }
-
-    // Page align the addresses for consistency
-    const u64 page_mask = size - 1;
-    const u64 aligned_guest = guest_addr & ~page_mask;
-    const u64 aligned_host = host_addr & ~page_mask;
-
-    m_tlb[replace_idx] = {
-        .guest_addr = aligned_guest,
-        .host_addr = aligned_host,
-        .size = size,
-        .valid = true,
-        .writable = writable,
-        .last_access_time = 0, // Not used in simplified implementation
-        .access_count = 1
-    };
-}
-
-void ArmNce::InvalidateTlb() {
-    std::lock_guard lock(m_tlb_mutex);
-    for (auto& entry : m_tlb) {
-        entry.valid = false;
-    }
 }
 
 } // namespace Core
