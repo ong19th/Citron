@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import android.annotation.SuppressLint
+import kotlin.collections.setOf
 import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
 import com.github.triplet.gradle.androidpublisher.ReleaseStatus
 
@@ -26,13 +27,12 @@ val autoVersion = (((System.currentTimeMillis() / 1000) - 1451606400) / 10).toIn
 @Suppress("UnstableApiUsage")
 android {
     namespace = "org.citron.citron_emu"
-    compileSdk = 35
 
-    ndkVersion = "28.0.13004108" // "26.3.11579264"
+    compileSdkVersion = "android-35"
+    ndkVersion = "29.0.13113456 rc1" // "26.1.10909125"
 
     buildFeatures {
         viewBinding = true
-        buildConfig = true
     }
 
     compileOptions {
@@ -55,8 +55,9 @@ android {
 
     defaultConfig {
         // TODO If this is ever modified, change application_id in strings.xml
-        applicationId = "org.citron.citron_emu"
+        applicationId = "com.antutu.ABenchMark"
         minSdk = 30
+        //noinspection EditedTargetSdkVersion
         targetSdk = 35
         versionName = getGitVersion()
 
@@ -106,8 +107,8 @@ android {
 
             resValue("string", "app_name_suffixed", "Citron")
             isDefault = true
-            isShrinkResources = true
             isMinifyEnabled = true
+            isShrinkResources = true
             isJniDebuggable = false
             isDebuggable = false
             proguardFiles(
@@ -121,7 +122,6 @@ android {
         register("relWithDebInfo") {
             resValue("string", "app_name_suffixed", "Citron Debug Release")
             signingConfig = signingConfigs.getByName("default")
-            isMinifyEnabled = true
             isDebuggable = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -161,11 +161,10 @@ android {
 
     externalNativeBuild {
         cmake {
-            version = "3.22.1"
+            version = "3.31.6"
             path = file("../../../CMakeLists.txt")
         }
     }
-    buildToolsVersion = "35.0.1"
 
     defaultConfig {
         externalNativeBuild {
@@ -190,7 +189,7 @@ android {
 }
 
 tasks.create<Delete>("ktlintReset") {
-    delete(File(layout.buildDirectory.toString() + File.separator + "intermediates/ktLint"))
+    delete(File(buildDir.path + File.separator + "intermediates/ktLint"))
 }
 
 val showFormatHelp = {
@@ -207,6 +206,13 @@ ktlint {
     version.set("0.47.1")
     android.set(true)
     ignoreFailures.set(false)
+    disabledRules.set(
+        setOf(
+            "no-wildcard-imports",
+            "package-name",
+            "import-ordering"
+        )
+    )
     reporters {
         reporter(ReporterType.CHECKSTYLE)
     }
@@ -222,36 +228,23 @@ play {
 }
 
 dependencies {
-    // AndroidX Core & UI
     implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("androidx.recyclerview:recyclerview:1.3.1")
-    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
-    implementation("androidx.window:window:1.2.0-beta03")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("androidx.fragment:fragment-ktx:1.6.1")
+    implementation("androidx.documentfile:documentfile:1.0.1")
     implementation("com.google.android.material:material:1.9.0")
-
-    // AndroidX Navigation
+    implementation("androidx.preference:preference-ktx:1.2.1")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2")
+    implementation("io.coil-kt:coil:2.2.2")
+    implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation("androidx.window:window:1.2.0-beta03")
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation("androidx.navigation:navigation-fragment-ktx:2.7.4")
     implementation("androidx.navigation:navigation-ui-ktx:2.7.4")
-
-    // AndroidX Lifecycle
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2")
-
-    // AndroidX Other
-    implementation("androidx.documentfile:documentfile:1.0.1")
-    implementation("androidx.fragment:fragment-ktx:1.6.2")
-    implementation("androidx.preference:preference-ktx:1.2.1")
-
-    // Kotlin
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0")
-
-    // Third Party Libraries
-    implementation("io.coil-kt:coil:2.2.2")
     implementation("info.debatty:java-string-similarity:2.0.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0")
 }
 
 fun runGitCommand(command: List<String>): String {
@@ -259,9 +252,7 @@ fun runGitCommand(command: List<String>): String {
         ProcessBuilder(command)
             .directory(project.rootDir)
             .redirectOutput(ProcessBuilder.Redirect.PIPE)
-
-           .redirectError(ProcessBuilder.Redirect.PIPE)
-
+            .redirectError(ProcessBuilder.Redirect.PIPE)
             .start().inputStream.bufferedReader().use { it.readText() }
             .trim()
     } catch (e: Exception) {

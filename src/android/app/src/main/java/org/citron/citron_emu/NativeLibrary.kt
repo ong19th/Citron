@@ -21,6 +21,7 @@ import org.citron.citron_emu.utils.Log
 import org.citron.citron_emu.model.InstallResult
 import org.citron.citron_emu.model.Patch
 import org.citron.citron_emu.model.GameVerificationResult
+import org.citron.citron_emu.network.NetPlayManager
 import java.net.NetworkInterface
 
 /**
@@ -242,6 +243,27 @@ object NativeLibrary {
 
         return coreErrorAlertResult
     }
+
+    @Keep
+    @JvmStatic
+    fun addNetPlayMessage(type: Int, message: String) {
+        val emulationActivity = sEmulationActivity.get()
+        if (emulationActivity != null) {
+            emulationActivity.addNetPlayMessages(type, message)
+        }
+        else {
+            NetPlayManager.addNetPlayMessage(type, message)
+        }
+    }
+
+    @Keep
+    @JvmStatic
+    fun clearChat() {
+        NetPlayManager.clearChat()
+    }
+
+
+    external fun netPlayInit()
 
     @Keep
     @JvmStatic

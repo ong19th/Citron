@@ -31,6 +31,7 @@ import org.citron.citron_emu.HomeNavigationDirections
 import org.citron.citron_emu.NativeLibrary
 import org.citron.citron_emu.R
 import org.citron.citron_emu.databinding.ActivityMainBinding
+import org.citron.citron_emu.dialogs.NetPlayDialog
 import org.citron.citron_emu.features.settings.model.Settings
 import org.citron.citron_emu.fragments.AddGameFolderDialogFragment
 import org.citron.citron_emu.fragments.ProgressDialogFragment
@@ -68,6 +69,7 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
         splashScreen.setKeepOnScreenCondition { !DirectoryInitialization.areDirectoriesReady }
 
         ThemeHelper.setTheme(this)
+        NativeLibrary.netPlayInit()
 
         super.onCreate(savedInstanceState)
 
@@ -155,6 +157,11 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
         }
 
         setInsets()
+    }
+
+    fun displayMultiplayerDialog() {
+        val dialog = NetPlayDialog(this)
+        dialog.show()
     }
 
     private fun checkKeys() {
@@ -346,6 +353,57 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
                 result,
                 dstPath,
                 "prod.keys"
+            ) != null
+        ) {
+            if (NativeLibrary.reloadKeys()) {
+                Toast.makeText(
+                    applicationContext,
+                    R.string.install_keys_success,
+                    Toast.LENGTH_SHORT
+                ).show()
+                homeViewModel.setCheckKeys(true)
+                gamesViewModel.reloadGames(true)
+                return true
+            } else {
+                MessageDialogFragment.newInstance(
+                    this,
+                    titleId = R.string.invalid_keys_error,
+                    descriptionId = R.string.install_keys_failure_description,
+                    helpLinkId = R.string.dumping_keys_quickstart_link
+                ).show(supportFragmentManager, MessageDialogFragment.TAG)
+                return false
+            }
+        }
+        return false
+    }
+
+    val getTitleKey =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { result ->
+            if (result != null) {
+                processTitleKey(result)
+            }
+        }
+
+    fun processTitleKey(result: Uri): Boolean {
+        if (FileUtil.getExtension(result) != "keys") {
+            MessageDialogFragment.newInstance(
+                this,
+                titleId = R.string.reading_keys_failure,
+                descriptionId = R.string.install_title_keys_failure_extension_description
+            ).show(supportFragmentManager, MessageDialogFragment.TAG)
+            return false
+        }
+
+        contentResolver.takePersistableUriPermission(
+            result,
+            Intent.FLAG_GRANT_READ_URI_PERMISSION
+        )
+
+        val dstPath = DirectoryInitialization.userDirectory + "/keys/"
+        if (FileUtil.copyUriToInternalStorage(
+                result,
+                dstPath,
+                "title.keys"
             ) != null
         ) {
             if (NativeLibrary.reloadKeys()) {

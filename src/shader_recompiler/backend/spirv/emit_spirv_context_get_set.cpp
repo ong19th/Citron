@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 citron Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <bit>
@@ -553,6 +554,42 @@ Id EmitInvocationInfo(EmitContext& ctx) {
         // Return sample mask in upper 16 bits
         return ctx.OpShiftLeftLogical(ctx.U32[1], ctx.OpLoad(ctx.U32[1], ctx.sample_mask),
                                       ctx.Const(16u));
+    case Stage::Geometry: {
+        // Return vertex count in upper 16 bits based on input topology
+        // Using a lookup table approach for vertex counts
+        const std::array<u32, 5> vertex_counts = {
+            1, // Points
+            2, // Lines
+            4, // LinesAdjacency
+            3, // Triangles
+            6  // TrianglesAdjacency
+        };
+
+        // Map the input topology to an index in our lookup table
+        u32 topology_index = 0;
+        switch (ctx.runtime_info.input_topology) {
+        case InputTopology::Lines:
+            topology_index = 1;
+            break;
+        case InputTopology::LinesAdjacency:
+            topology_index = 2;
+            break;
+        case InputTopology::Triangles:
+            topology_index = 3;
+            break;
+        case InputTopology::TrianglesAdjacency:
+            topology_index = 4;
+            break;
+        case InputTopology::Points:
+        default:
+            topology_index = 0;
+            break;
+        }
+
+        // Get the vertex count from the lookup table and shift it
+        const u32 vertex_count = vertex_counts[topology_index];
+        return ctx.OpShiftLeftLogical(ctx.U32[1], ctx.Const(vertex_count), ctx.Const(16u));
+    }
     case Stage::Compute:
         // For compute shaders, return standard format since we can't access workgroup size directly
         return ctx.Const(0x00ff0000u);

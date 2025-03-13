@@ -17,6 +17,45 @@ if (MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /WX-")
 endif()
 
+# PGO Configuration
+option(CITRON_ENABLE_PGO_INSTRUMENT "Enable Profile-Guided Optimization instrumentation build" OFF)
+option(CITRON_ENABLE_PGO_OPTIMIZE "Enable Profile-Guided Optimization optimization build" OFF)
+
+if(MSVC)
+    if(CITRON_ENABLE_PGO_INSTRUMENT)
+        string(APPEND CMAKE_CXX_FLAGS_RELEASE " /GL /LTCG:PGINSTRUMENT")
+        string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " /LTCG:PGINSTRUMENT")
+        string(APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE " /LTCG:PGINSTRUMENT")
+    elseif(CITRON_ENABLE_PGO_OPTIMIZE)
+        string(APPEND CMAKE_CXX_FLAGS_RELEASE " /GL /LTCG:PGOPTIMIZE")
+        string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " /LTCG:PGOPTIMIZE")
+        string(APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE " /LTCG:PGOPTIMIZE")
+    endif()
+else()
+    # GCC and Clang PGO flags
+    if(CITRON_ENABLE_PGO_INSTRUMENT)
+        if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            string(APPEND CMAKE_CXX_FLAGS_RELEASE " -fprofile-instr-generate")
+            string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " -fprofile-instr-generate")
+            string(APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE " -fprofile-instr-generate")
+        else() # GCC
+            string(APPEND CMAKE_CXX_FLAGS_RELEASE " -fprofile-generate")
+            string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " -fprofile-generate")
+            string(APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE " -fprofile-generate")
+        endif()
+    elseif(CITRON_ENABLE_PGO_OPTIMIZE)
+        if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            string(APPEND CMAKE_CXX_FLAGS_RELEASE " -fprofile-instr-use=default.profdata")
+            string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " -fprofile-instr-use=default.profdata")
+            string(APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE " -fprofile-instr-use=default.profdata")
+        else() # GCC
+            string(APPEND CMAKE_CXX_FLAGS_RELEASE " -fprofile-use")
+            string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " -fprofile-use")
+            string(APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE " -fprofile-use")
+        endif()
+    endif()
+endif()
+
 # Check if SDL2::SDL2 target exists; if not, create an alias
 if (TARGET SDL2::SDL2-static)
     add_library(SDL2::SDL2 ALIAS SDL2::SDL2-static)
@@ -98,21 +137,22 @@ endif()
 option(ENABLE_OPENSSL "Enable OpenSSL backend for ISslConnection" ${DEFAULT_ENABLE_OPENSSL})
 
 if (ANDROID AND CITRON_DOWNLOAD_ANDROID_VVL)
-    set(vvl_version "vulkan-sdk-1.4.304.1")
+    set(vvl_version "1.4.304.1")
     set(vvl_zip_file "${CMAKE_BINARY_DIR}/externals/vvl-android.zip")
-    if (NOT EXISTS "${vvl_zip_file}")
-        # Download and extract validation layer release to externals directory
-        set(vvl_base_url "https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases/download")
-        file(DOWNLOAD "${vvl_base_url}/${vvl_version}/android-binaries-1.4.304.1.zip"
-            "${vvl_zip_file}" SHOW_PROGRESS)
-        execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${vvl_zip_file}"
-                        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externals")
-    endif()
-
-    # Copy the arm64 binary to src/android/app/main/jniLibs only if it doesn't exist
     set(vvl_lib_path "${CMAKE_CURRENT_SOURCE_DIR}/src/android/app/src/main/jniLibs/arm64-v8a/")
-    set(vvl_lib_file "${vvl_lib_path}/libVkLayer_khronos_validation.so")
-    if (NOT EXISTS "${vvl_lib_file}")
+    set(vvl_final_lib "${vvl_lib_path}/libVkLayer_khronos_validation.so")
+
+    if (NOT EXISTS "${vvl_final_lib}")
+        # Download and extract validation layer release to externals directory
+        if (NOT EXISTS "${vvl_zip_file}")
+            set(vvl_base_url "https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases/download")
+            file(DOWNLOAD "${vvl_base_url}/vulkan-sdk-${vvl_version}/android-binaries-${vvl_version}.zip"
+                "${vvl_zip_file}" SHOW_PROGRESS)
+            execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${vvl_zip_file}"
+                            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externals")
+        endif()
+
+        # Copy the arm64 binary to src/android/app/main/jniLibs
         file(COPY "${CMAKE_BINARY_DIR}/externals/android-binaries-${vvl_version}/arm64-v8a/libVkLayer_khronos_validation.so"
                 DESTINATION "${vvl_lib_path}")
     endif()
@@ -129,15 +169,22 @@ if (CITRON_USE_BUNDLED_VCPKG)
 
         if (CMAKE_ANDROID_ARCH_ABI STREQUAL "arm64-v8a")
             set(VCPKG_TARGET_TRIPLET "arm64-android")
+            set(VCPKG_HOST_TRIPLET "x64-windows")
             # this is to avoid CMake using the host pkg-config to find the host
             # libraries when building for Android targets
             set(PKG_CONFIG_EXECUTABLE "aarch64-none-linux-android-pkg-config" CACHE FILEPATH "" FORCE)
         elseif (CMAKE_ANDROID_ARCH_ABI STREQUAL "x86_64")
             set(VCPKG_TARGET_TRIPLET "x64-android")
+            set(VCPKG_HOST_TRIPLET "x64-windows")
             set(PKG_CONFIG_EXECUTABLE "x86_64-none-linux-android-pkg-config" CACHE FILEPATH "" FORCE)
         else()
             message(FATAL_ERROR "Unsupported Android architecture ${CMAKE_ANDROID_ARCH_ABI}")
         endif()
+
+        # Add these lines to ensure proper Android toolchain setup
+        set(VCPKG_CHAINLOAD_TOOLCHAIN_FILE "${ANDROID_NDK}/build/cmake/android.toolchain.cmake")
+        set(VCPKG_CRT_LINKAGE "dynamic")
+        set(VCPKG_LIBRARY_LINKAGE "static")
     endif()
 
     if (MSVC)

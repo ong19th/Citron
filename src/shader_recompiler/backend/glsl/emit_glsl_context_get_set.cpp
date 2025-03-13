@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 citron Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <string_view>
@@ -423,6 +424,8 @@ void EmitInvocationId(EmitContext& ctx, IR::Inst& inst) {
 void EmitInvocationInfo(EmitContext& ctx, IR::Inst& inst) {
     switch (ctx.stage) {
     case Stage::TessellationControl:
+        ctx.AddU32("{}=uint(gl_PatchVerticesIn)<<16;", inst);
+        break;
     case Stage::TessellationEval:
         ctx.AddU32("{}=uint(gl_PatchVerticesIn)<<16;", inst);
         break;
@@ -430,7 +433,46 @@ void EmitInvocationInfo(EmitContext& ctx, IR::Inst& inst) {
         // Return sample mask in upper 16 bits
         ctx.AddU32("{}=uint(gl_SampleMaskIn[0])<<16;", inst);
         break;
+    case Stage::Geometry: {
+        // Return vertex count in upper 16 bits based on input topology
+        // Using a lookup table approach for vertex counts
+        ctx.AddU32("{}=uint(", inst);
+
+        // Define vertex counts for each topology in a comment for clarity
+        ctx.Add("// Vertex counts: Points=1, Lines=2, LinesAdj=4, Triangles=3, TrianglesAdj=6\n");
+
+        // Use a lookup table approach in the generated GLSL code
+        ctx.Add("(");
+
+        // Generate a conditional expression that acts like a lookup table
+        switch (ctx.runtime_info.input_topology) {
+        case InputTopology::Points:
+            ctx.Add("1"); // Points
+            break;
+        case InputTopology::Lines:
+            ctx.Add("2"); // Lines
+            break;
+        case InputTopology::LinesAdjacency:
+            ctx.Add("4"); // LinesAdjacency
+            break;
+        case InputTopology::Triangles:
+            ctx.Add("3"); // Triangles
+            break;
+        case InputTopology::TrianglesAdjacency:
+            ctx.Add("6"); // TrianglesAdjacency
+            break;
+        default:
+            ctx.Add("1"); // Default to Points
+            break;
+        }
+
+        ctx.Add(")<<16);");
+        break;
+    }
     case Stage::Compute:
+        // Return standard format (0x00ff0000)
+        ctx.AddU32("{}=0x00ff0000u;", inst);
+        break;
     default:
         // Return standard format (0x00ff0000)
         ctx.AddU32("{}=0x00ff0000u;", inst);

@@ -360,11 +360,6 @@
     <string>Open &amp;Mods Page</string>
    </property>
   </action>
-  <action name="action_Open_Quickstart_Guide">
-   <property name="text">
-    <string>Open &amp;Quickstart Guide</string>
-   </property>
-  </action>
   <action name="action_Open_FAQ">
    <property name="text">
     <string>&amp;FAQ</string>

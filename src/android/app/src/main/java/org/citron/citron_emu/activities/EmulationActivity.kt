@@ -4,6 +4,7 @@
 package org.citron.citron_emu.activities
 
 import android.annotation.SuppressLint
+import android.app.AlertDialog
 import android.app.PendingIntent
 import android.app.PictureInPictureParams
 import android.app.RemoteAction
@@ -39,12 +40,14 @@ import org.citron.citron_emu.NativeLibrary
 import org.citron.citron_emu.R
 import org.citron.citron_emu.CitronApplication
 import org.citron.citron_emu.databinding.ActivityEmulationBinding
+import org.citron.citron_emu.dialogs.NetPlayDialog
 import org.citron.citron_emu.features.input.NativeInput
 import org.citron.citron_emu.features.settings.model.BooleanSetting
 import org.citron.citron_emu.features.settings.model.IntSetting
 import org.citron.citron_emu.features.settings.model.Settings
 import org.citron.citron_emu.model.EmulationViewModel
 import org.citron.citron_emu.model.Game
+import org.citron.citron_emu.network.NetPlayManager
 import org.citron.citron_emu.utils.InputHandler
 import org.citron.citron_emu.utils.Log
 import org.citron.citron_emu.utils.MemoryUtil
@@ -52,6 +55,7 @@ import org.citron.citron_emu.utils.NativeConfig
 import org.citron.citron_emu.utils.NfcReader
 import org.citron.citron_emu.utils.ParamPackage
 import org.citron.citron_emu.utils.ThemeHelper
+import org.citron.citron_emu.utils.LicenseVerifier
 import java.text.NumberFormat
 import kotlin.math.roundToInt
 
@@ -78,6 +82,22 @@ class EmulationActivity : AppCompatActivity(), SensorEventListener {
         ThemeHelper.setTheme(this)
 
         super.onCreate(savedInstanceState)
+
+        // Check if firmware is available
+        if (!NativeLibrary.isFirmwareAvailable()) {
+            AlertDialog.Builder(this)
+                .setTitle(R.string.firmware_missing_title)
+                .setMessage(R.string.firmware_missing_message)
+                .setPositiveButton(R.string.ok) { _, _ ->
+                    finish()
+                }
+                .setCancelable(false)
+                .show()
+            return
+        }
+
+        // Add license verification at the start
+        LicenseVerifier.verifyLicense(this)
 
         InputHandler.updateControllerData()
         val players = NativeConfig.getInputSettings(true)
@@ -404,6 +424,16 @@ class EmulationActivity : AppCompatActivity(), SensorEventListener {
         }
         setPictureInPictureParams(pictureInPictureParamsBuilder.build())
     }
+
+    fun displayMultiplayerDialog() {
+        val dialog = NetPlayDialog(this)
+        dialog.show()
+    }
+
+    fun addNetPlayMessages(type: Int, msg: String) {
+        NetPlayManager.addNetPlayMessage(type, msg)
+    }
+
 
     private var pictureInPictureReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent) {

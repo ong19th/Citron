@@ -121,6 +121,16 @@ class HomeSettingsFragment : Fragment() {
             )
             add(
                 HomeSetting(
+                    R.string.multiplayer,
+                    R.string.multiplayer_description,
+                    R.drawable.ic_multiplayer,
+                    {
+                        val action = mainActivity.displayMultiplayerDialog()
+                    },
+                )
+            )
+            add(
+                HomeSetting(
                     R.string.applets,
                     R.string.applets_description,
                     R.drawable.ic_applet,

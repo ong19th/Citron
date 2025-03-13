@@ -1539,7 +1539,6 @@ void GMainWindow::ConnectMenuEvents() {
     connect_menu(ui->action_Stop, &GMainWindow::OnStopGame);
     connect_menu(ui->action_Report_Compatibility, &GMainWindow::OnMenuReportCompatibility);
     connect_menu(ui->action_Open_Mods_Page, &GMainWindow::OnOpenModsPage);
-    connect_menu(ui->action_Open_Quickstart_Guide, &GMainWindow::OnOpenQuickstartGuide);
     connect_menu(ui->action_Open_FAQ, &GMainWindow::OnOpenFAQ);
     connect_menu(ui->action_Restart, &GMainWindow::OnRestartGame);
     connect_menu(ui->action_Configure, &GMainWindow::OnConfigure);
@@ -1844,9 +1843,7 @@ bool GMainWindow::LoadROM(const QString& filename, Service::AM::FrontendAppletPa
                     tr("Error while loading ROM! %1", "%1 signifies a numeric error code.")
                         .arg(QString::fromStdString(error_code));
                 const auto description =
-                    tr("%1<br>Please follow <a href='https://citron-emu.org/help/quickstart/'>the "
-                       "citron quickstart guide</a> to redump your files.<br>You can refer "
-                       "to the citron wiki</a> or the citron Discord</a> for help.",
+                    tr("%1<br>This software is provided as-is without any warranty or support.<br>Please refer to community resources or documentation for assistance.",
                        "%1 signifies an error string.")
                         .arg(QString::fromStdString(
                             GetResultStatusString(static_cast<Loader::ResultStatus>(error_id))));
@@ -3578,10 +3575,6 @@ void GMainWindow::OnOpenModsPage() {
     OpenURL(QUrl(QStringLiteral("https://git.citron-emu.org/Citron/Citron/wiki/Switch-Mods")));
 }
 
-void GMainWindow::OnOpenQuickstartGuide() {
-    OpenURL(QUrl(QStringLiteral("https://citron-emu.org/help/quickstart/")));
-}
-
 void GMainWindow::OnOpenFAQ() {
     OpenURL(QUrl(QStringLiteral("https://citron-emu.org/wiki/faq/")));
 }
@@ -4787,19 +4780,24 @@ void GMainWindow::OnCheckFirmwareDecryption() {
 }
 
 bool GMainWindow::CheckFirmwarePresence() {
-    constexpr u64 MiiEditId = static_cast<u64>(Service::AM::AppletProgramId::MiiEdit);
+    constexpr u64 MiiEditId = 0x0100000000001009; // Mii Edit applet ID
+    constexpr u64 QLaunchId = 0x0100000000001000; // Home Menu applet ID
 
     auto bis_system = system->GetFileSystemController().GetSystemNANDContents();
     if (!bis_system) {
         return false;
     }
 
+    // Check for essential system applets
     auto mii_applet_nca = bis_system->GetEntry(MiiEditId, FileSys::ContentRecordType::Program);
-    if (!mii_applet_nca) {
+    auto qlaunch_nca = bis_system->GetEntry(QLaunchId, FileSys::ContentRecordType::Program);
+
+    if (!mii_applet_nca || !qlaunch_nca) {
         return false;
     }
 
-    return true;
+    // Also check for essential keys
+    return Core::Crypto::KeyManager::Instance().IsFirmwareAvailable();
 }
 
 void GMainWindow::SetFirmwareVersion() {
