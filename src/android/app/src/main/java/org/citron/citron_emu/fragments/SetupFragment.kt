@@ -180,6 +180,62 @@ class SetupFragment : Fragment() {
                     }
                 )
             )
+
+            // Add title.keys installation page
+            add(
+                SetupPage(
+                    R.drawable.ic_key,
+                    R.string.install_title_keys,
+                    R.string.install_title_keys_description,
+                    R.drawable.ic_add,
+                    true,
+                    R.string.select_keys,
+                    {
+                        titleKeyCallback = it
+                        getTitleKey.launch(arrayOf("*/*"))
+                    },
+                    true,
+                    R.string.install_title_keys_warning,
+                    R.string.install_title_keys_warning_description,
+                    R.string.install_title_keys_warning_help,
+                    {
+                        val file = File(DirectoryInitialization.userDirectory + "/keys/title.keys")
+                        if (file.exists()) {
+                            StepState.COMPLETE
+                        } else {
+                            StepState.INCOMPLETE
+                        }
+                    }
+                )
+            )
+
+            // Add firmware installation page (mandatory)
+            add(
+                SetupPage(
+                    R.drawable.ic_key,
+                    R.string.install_firmware,
+                    R.string.install_firmware_description,
+                    R.drawable.ic_add,
+                    true,
+                    R.string.select_firmware,
+                    {
+                        firmwareCallback = it
+                        getFirmware.launch(arrayOf("application/zip"))
+                    },
+                    true,
+                    R.string.install_firmware_warning,
+                    R.string.install_firmware_warning_description,
+                    R.string.install_firmware_warning_help,
+                    {
+                        if (NativeLibrary.isFirmwareAvailable()) {
+                            StepState.COMPLETE
+                        } else {
+                            StepState.INCOMPLETE
+                        }
+                    }
+                )
+            )
+
             add(
                 SetupPage(
                     R.drawable.ic_controller,
@@ -268,6 +324,18 @@ class SetupFragment : Fragment() {
                     return@setOnClickListener
                 }
 
+                // Special handling for firmware page - don't allow skipping
+                if (currentPage.titleId == R.string.install_firmware && !NativeLibrary.isFirmwareAvailable()) {
+                    SetupWarningDialogFragment.newInstance(
+                        currentPage.warningTitleId,
+                        currentPage.warningDescriptionId,
+                        currentPage.warningHelpLinkId,
+                        index,
+                        allowSkip = false
+                    ).show(childFragmentManager, SetupWarningDialogFragment.TAG)
+                    return@setOnClickListener
+                }
+
                 if (!hasBeenWarned[index]) {
                     SetupWarningDialogFragment.newInstance(
                         currentPage.warningTitleId,
@@ -343,6 +411,30 @@ class SetupFragment : Fragment() {
                 if (NativeLibrary.areKeysPresent()) {
                     keyCallback.onStepCompleted()
                 }
+            }
+        }
+
+    private lateinit var titleKeyCallback: SetupCallback
+
+    val getTitleKey =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { result ->
+            if (result != null) {
+                mainActivity.processTitleKey(result)
+                titleKeyCallback.onStepCompleted()
+            }
+        }
+
+    private lateinit var firmwareCallback: SetupCallback
+
+    val getFirmware =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { result ->
+            if (result != null) {
+                mainActivity.getFirmware.launch(arrayOf("application/zip"))
+                binding.root.postDelayed({
+                    if (NativeLibrary.isFirmwareAvailable()) {
+                        firmwareCallback.onStepCompleted()
+                    }
+                }, 1000)
             }
         }
 

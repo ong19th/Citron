@@ -377,6 +377,57 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
         return false
     }
 
+    val getTitleKey =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { result ->
+            if (result != null) {
+                processTitleKey(result)
+            }
+        }
+
+    fun processTitleKey(result: Uri): Boolean {
+        if (FileUtil.getExtension(result) != "keys") {
+            MessageDialogFragment.newInstance(
+                this,
+                titleId = R.string.reading_keys_failure,
+                descriptionId = R.string.install_title_keys_failure_extension_description
+            ).show(supportFragmentManager, MessageDialogFragment.TAG)
+            return false
+        }
+
+        contentResolver.takePersistableUriPermission(
+            result,
+            Intent.FLAG_GRANT_READ_URI_PERMISSION
+        )
+
+        val dstPath = DirectoryInitialization.userDirectory + "/keys/"
+        if (FileUtil.copyUriToInternalStorage(
+                result,
+                dstPath,
+                "title.keys"
+            ) != null
+        ) {
+            if (NativeLibrary.reloadKeys()) {
+                Toast.makeText(
+                    applicationContext,
+                    R.string.install_keys_success,
+                    Toast.LENGTH_SHORT
+                ).show()
+                homeViewModel.setCheckKeys(true)
+                gamesViewModel.reloadGames(true)
+                return true
+            } else {
+                MessageDialogFragment.newInstance(
+                    this,
+                    titleId = R.string.invalid_keys_error,
+                    descriptionId = R.string.install_keys_failure_description,
+                    helpLinkId = R.string.dumping_keys_quickstart_link
+                ).show(supportFragmentManager, MessageDialogFragment.TAG)
+                return false
+            }
+        }
+        return false
+    }
+
     val getFirmware =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { result ->
             if (result == null) {

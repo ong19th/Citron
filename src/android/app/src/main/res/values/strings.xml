@@ -108,11 +108,15 @@
     <string name="import_saves">Import</string>
     <string name="export_saves">Export</string>
     <string name="install_firmware">Install firmware</string>
-    <string name="install_firmware_description">Firmware must be in a ZIP archive and is needed to boot some games</string>
+    <string name="install_firmware_description">Required for emulation of system features</string>
+    <string name="install_firmware_warning">Firmware installation is mandatory</string>
+    <string name="install_firmware_warning_description">Firmware is required for proper emulation. You must install firmware to continue.</string>
+    <string name="install_firmware_warning_help">https://citron-emu.org/help/quickstart/#dumping-system-firmware</string>
     <string name="firmware_installing">Installing firmware</string>
-    <string name="firmware_installed_success">Firmware installed successfully</string>
-    <string name="firmware_installed_failure">Firmware installation failed</string>
-    <string name="firmware_installed_failure_description">Make sure the firmware nca files are at the root of the zip and try again.</string>
+    <string name="firmware_installed_success">Firmware successfully installed</string>
+    <string name="firmware_installed_failure">Failed to install firmware</string>
+    <string name="firmware_installed_failure_description">The selected file is not a valid firmware archive or is corrupt.</string>
+    <string name="select_firmware">Select Firmware</string>
     <string name="share_log">Share debug logs</string>
     <string name="share_log_description">Share citron\'s log file to debug issues</string>
     <string name="share_log_missing">No log file found</string>
@@ -171,6 +175,14 @@
     <string name="cabinet_game_data_eraser">Game data eraser</string>
     <string name="cabinet_restorer">Restorer</string>
     <string name="cabinet_formatter">Formatter</string>
+
+    <!-- Title keys strings -->
+    <string name="install_title_keys">Install title.keys</string>
+    <string name="install_title_keys_description">Required for additional game compatibility</string>
+    <string name="install_title_keys_warning">Skip adding title keys?</string>
+    <string name="install_title_keys_warning_description">Title keys may be required for some games to function properly.</string>
+    <string name="install_title_keys_warning_help">https://citron-emu.org/</string>
+    <string name="install_title_keys_failure_extension_description">Verify your title keys file has a .keys extension and try again.</string>
 
     <!-- About screen strings -->
     <string name="gaia_is_not_real">Gaia isn\'t real</string>

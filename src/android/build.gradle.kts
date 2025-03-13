@@ -6,7 +6,7 @@
 plugins {
     id("com.android.application") version "8.9.0" apply false
     id("com.android.library") version "8.9.0" apply false
-    id("org.jetbrains.kotlin.android") version "2.1.20-RC2" apply false
+    id("org.jetbrains.kotlin.android") version "1.9.20" apply false
 }
 
 tasks.register("clean").configure {
@@ -18,6 +18,6 @@ buildscript {
         google()
     }
     dependencies {
-        classpath("androidx.navigation:navigation-safe-args-gradle-plugin:2.8.8")
+        classpath("androidx.navigation:navigation-safe-args-gradle-plugin:2.6.0")
     }
 }
