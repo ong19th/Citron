@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2014 Citra Emulator Project
+// SPDX-FileCopyrightText: 2025 Citron Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -9,6 +10,8 @@
 #include <span>
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <random>
 
 #include "common/scratch_buffer.h"
 #include "common/typed_address.h"
@@ -43,6 +46,9 @@ constexpr std::size_t CITRON_PAGEBITS = 12;
 constexpr u64 CITRON_PAGESIZE = 1ULL << CITRON_PAGEBITS;
 constexpr u64 CITRON_PAGEMASK = CITRON_PAGESIZE - 1;
 
+/// Emulated memory size (4GB)
+constexpr u64 EMULATED_MEMORY_SIZE = 4ULL * 1024 * 1024 * 1024;
+
 /// Virtual user-space memory regions
 enum : u64 {
     /// TLS (Thread-Local Storage) related.
@@ -50,6 +56,18 @@ enum : u64 {
 
     /// Application stack
     DEFAULT_STACK_SIZE = 0x100000,
+
+    /// Mask to randomize bits 37-12 for NRO base address
+    NRO_BASE_ADDRESS_RANDOMIZATION_MASK = 0xFFFFFFFFFFFFF000,
+};
+
+/// Types of memory regions in the system
+enum class MemoryRegionType {
+    SystemMemory,
+    GraphicsMemory,
+    IOMemory,
+    BinaryMemory,
+    Undefined
 };
 
 /// Central class that handles all memory operations and state.
@@ -63,6 +81,55 @@ public:
 
     Memory(Memory&&) = default;
     Memory& operator=(Memory&&) = delete;
+
+    /**
+     * Structure representing a memory region with its properties
+     */
+    struct MemoryRegion {
+        Common::ProcessAddress start_address;
+        u64 size;
+        std::unique_ptr<u8[]> data;
+        bool is_mapped;
+        MemoryRegionType type;
+        bool is_executable;
+        bool is_writable;
+
+        // Default constructor needed for STL containers
+        MemoryRegion() : start_address(0), size(0), data(nullptr), is_mapped(false),
+                        type(MemoryRegionType::Undefined), is_executable(false), is_writable(false) {}
+
+        MemoryRegion(Common::ProcessAddress start, u64 sz, MemoryRegionType t, bool exec = false, bool write = false)
+            : start_address(start), size(sz), data(std::make_unique<u8[]>(sz)), is_mapped(false),
+              type(t), is_executable(exec), is_writable(write) {}
+    };
+
+    /**
+     * Maps a memory region with the specified properties
+     *
+     * @param start_address The starting address of the region
+     * @param size The size of the region in bytes
+     * @param type The type of memory region
+     * @param exec Whether the region is executable
+     * @param write Whether the region is writable
+     */
+    void MapMemoryRegion(Common::ProcessAddress start_address, u64 size, MemoryRegionType type,
+                        bool exec = false, bool write = false);
+
+    /**
+     * Maps a binary with a randomized base address
+     *
+     * @param size The size of the binary in bytes
+     * @returns The base address where the binary was mapped
+     */
+    Common::ProcessAddress MapBinary(u64 size);
+
+    /**
+     * Finds a memory region containing the specified address
+     *
+     * @param address The address to search for
+     * @returns Pointer to the memory region if found, nullptr otherwise
+     */
+    MemoryRegion* FindRegion(Common::ProcessAddress address);
 
     /**
      * Resets the state of the Memory system.
@@ -497,6 +564,13 @@ private:
 
     struct Impl;
     std::unique_ptr<Impl> impl;
+
+    std::unordered_map<Common::ProcessAddress, MemoryRegion> memory_regions;
+    std::random_device rd;
+    std::mt19937 gen;
+    std::uniform_int_distribution<u64> dis;
+
+    Common::ProcessAddress GenerateRandomBaseAddress();
 };
 
 template <typename T, GuestMemoryFlags FLAGS>
