@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: 2015 Citra Emulator Project
 // SPDX-FileCopyrightText: 2018 yuzu Emulator Project
+// SPDX-FileCopyrightText: 2025 Citron Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
@@ -909,7 +910,9 @@ struct Memory::Impl {
 #endif
 };
 
-Memory::Memory(Core::System& system_) : system{system_} {
+Memory::Memory(Core::System& system_) : system(system_), impl(std::make_unique<Impl>(system_)), gen(rd()) {
+    // Initialize the random number distribution
+    dis = std::uniform_int_distribution<u64>(0, std::numeric_limits<u64>::max());
     Reset();
 }
 
@@ -1149,6 +1152,50 @@ bool Memory::InvalidateSeparateHeap(void* fault_address) {
 #else
     return false;
 #endif
+}
+
+Common::ProcessAddress Memory::GenerateRandomBaseAddress() {
+    u64 random_bits = dis(gen);
+    return Common::ProcessAddress((random_bits & ~NRO_BASE_ADDRESS_RANDOMIZATION_MASK) |
+                                (random_bits & NRO_BASE_ADDRESS_RANDOMIZATION_MASK));
+}
+
+Memory::MemoryRegion* Memory::FindRegion(Common::ProcessAddress address) {
+    for (auto& entry : memory_regions) {
+        if (address >= entry.second.start_address &&
+            address < entry.second.start_address + entry.second.size) {
+            return &entry.second;
+        }
+    }
+    return nullptr;
+}
+
+void Memory::MapMemoryRegion(Common::ProcessAddress start_address, u64 size, MemoryRegionType type,
+                           bool exec, bool write) {
+    if (start_address + size > EMULATED_MEMORY_SIZE) {
+        LOG_ERROR(HW_Memory, "Memory mapping exceeds emulated memory boundaries at address {:016X}",
+                  GetInteger(start_address));
+        return;
+    }
+
+    // Create the memory region
+    memory_regions[start_address] = MemoryRegion(start_address, size, type, exec, write);
+
+    // Map the region in the page table
+    Common::MemoryPermission perms{};
+    if (exec) perms |= Common::MemoryPermission::Execute;
+    if (write) perms |= Common::MemoryPermission::Write;
+    perms |= Common::MemoryPermission::Read;
+
+    // Using the MapMemoryRegion method defined in the Impl struct
+    impl->MapMemoryRegion(*impl->current_page_table, start_address, size,
+                         Common::PhysicalAddress(GetInteger(start_address)), perms, false);
+}
+
+Common::ProcessAddress Memory::MapBinary(u64 size) {
+    Common::ProcessAddress base_address = GenerateRandomBaseAddress();
+    MapMemoryRegion(base_address, size, MemoryRegionType::BinaryMemory, true, true);
+    return base_address;
 }
 
 } // namespace Core::Memory

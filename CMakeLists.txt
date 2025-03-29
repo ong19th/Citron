@@ -169,13 +169,23 @@ if (CITRON_USE_BUNDLED_VCPKG)
 
         if (CMAKE_ANDROID_ARCH_ABI STREQUAL "arm64-v8a")
             set(VCPKG_TARGET_TRIPLET "arm64-android")
-            set(VCPKG_HOST_TRIPLET "x64-windows")
+            # Detect host system (Windows or Linux)
+            if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+                set(VCPKG_HOST_TRIPLET "x64-windows")
+            else()
+                set(VCPKG_HOST_TRIPLET "x64-linux")
+            endif()
             # this is to avoid CMake using the host pkg-config to find the host
             # libraries when building for Android targets
             set(PKG_CONFIG_EXECUTABLE "aarch64-none-linux-android-pkg-config" CACHE FILEPATH "" FORCE)
         elseif (CMAKE_ANDROID_ARCH_ABI STREQUAL "x86_64")
             set(VCPKG_TARGET_TRIPLET "x64-android")
-            set(VCPKG_HOST_TRIPLET "x64-windows")
+            # Detect host system (Windows or Linux)
+            if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+                set(VCPKG_HOST_TRIPLET "x64-windows")
+            else()
+                set(VCPKG_HOST_TRIPLET "x64-linux")
+            endif()
             set(PKG_CONFIG_EXECUTABLE "x86_64-none-linux-android-pkg-config" CACHE FILEPATH "" FORCE)
         else()
             message(FATAL_ERROR "Unsupported Android architecture ${CMAKE_ANDROID_ARCH_ABI}")
@@ -437,7 +447,7 @@ if (ENABLE_SDL2)
     if (CITRON_USE_BUNDLED_SDL2)
         # Detect toolchain and platform
         if ((MSVC_VERSION GREATER_EQUAL 1920) AND ARCHITECTURE_x86_64)
-            set(SDL2_VER "SDL2-2.32.0")
+            set(SDL2_VER "SDL2-2.28.2")
         else()
             message(FATAL_ERROR "No bundled SDL2 binaries for your toolchain. Disable CITRON_USE_BUNDLED_SDL2 and provide your own.")
         endif()
@@ -584,7 +594,7 @@ endif()
 # against all the src files. This should be used before making a pull request.
 # =======================================================================
 
-set(CLANG_FORMAT_POSTFIX "-18")
+set(CLANG_FORMAT_POSTFIX "-15")
 find_program(CLANG_FORMAT
     NAMES clang-format${CLANG_FORMAT_POSTFIX}
           clang-format
@@ -595,7 +605,7 @@ if (NOT CLANG_FORMAT)
         message(STATUS "Clang format not found! Downloading...")
         set(CLANG_FORMAT "${PROJECT_BINARY_DIR}/externals/clang-format${CLANG_FORMAT_POSTFIX}.exe")
         file(DOWNLOAD
-            https://git.citron-emu.org/Citron/ext-windows-bin/raw/master/clang-format${CLANG_FORMAT_POSTFIX}.exe
+            https://github.com/yuzu-mirror/ext-windows-bin/raw/master/clang-format${CLANG_FORMAT_POSTFIX}.exe
             "${CLANG_FORMAT}" SHOW_PROGRESS
             STATUS DOWNLOAD_SUCCESS)
         if (NOT DOWNLOAD_SUCCESS EQUAL 0)

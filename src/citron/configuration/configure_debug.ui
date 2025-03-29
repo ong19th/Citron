@@ -423,6 +423,12 @@
          </item>
          <item row="6" column="0">
           <widget class="QCheckBox" name="use_auto_stub">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="toolTip">
+            <string>This feature has been disabled.</string>
+           </property>
            <property name="text">
             <string>Enable Auto-Stub**</string>
            </property>
@@ -430,6 +436,12 @@
          </item>
          <item row="0" column="0">
           <widget class="QCheckBox" name="quest_flag">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="toolTip">
+            <string>This feature has been disabled.</string>
+           </property>
            <property name="text">
             <string>Kiosk (Quest) Mode</string>
            </property>
